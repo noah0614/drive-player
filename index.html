@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drive 영상 플레이어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12141A;
+  --surface:#1A1D26;
+  --surface-2:#212632;
+  --line:#2C3140;
+  --text:#E9E7E2;
+  --muted:#868FA3;
+  --amber:#F5A524;
+  --display:"Barlow Condensed", "IBM Plex Sans KR", sans-serif;
+  --body:"IBM Plex Sans KR", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---------- header ---------- */
+.masthead{
+  display:flex;align-items:baseline;gap:14px;
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--line);
+}
+.masthead h1{
+  margin:0;
+  font-family:var(--display);
+  font-size:26px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.masthead p{margin:0;color:var(--muted);font-size:13px}
+
+/* ---------- layout ---------- */
+.wrap{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 340px;
+  gap:24px;
+  padding:24px;
+  align-items:start;
+  max-width:1600px;margin:0 auto;
+}
+
+/* ---------- stage ---------- */
+.stage{min-width:0}
+.slate{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-bottom:none;
+  border-radius:4px 4px 0 0;
+}
+.slate__mark{
+  font-family:var(--mono);font-size:12px;
+  color:var(--ink);background:var(--amber);
+  padding:2px 7px;border-radius:2px;font-weight:500;
+}
+.slate__title{
+  font-family:var(--display);
+  font-size:20px;letter-spacing:.04em;
+  text-transform:uppercase;
+  margin-right:auto;
+}
+.slate__id{font-family:var(--mono);font-size:11px;color:var(--muted)}
+/* signature: clapper stripe between slate and frame */
+.stripe{
+  height:7px;
+  background:repeating-linear-gradient(115deg,
+    var(--text) 0 14px, var(--ink) 14px 28px);
+  opacity:.85;
+}
+.frame{
+  position:relative;
+  aspect-ratio:16/9;
+  background:#000;
+  border:1px solid var(--line);
+  border-top:none;
+  border-radius:0 0 4px 4px;
+  overflow:hidden;
+}
+.frame iframe{width:100%;height:100%;border:0;display:block}
+.empty{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;text-align:center;padding:24px;
+  background:var(--surface);
+}
+.empty strong{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase}
+.empty span{color:var(--muted);font-size:13px;max-width:34ch}
+
+/* ---------- rail ---------- */
+.rail{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:4px;
+  overflow:hidden;
+}
+.rail__head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;
+  border-bottom:1px solid var(--line);
+  font-family:var(--display);
+  font-size:15px;letter-spacing:.1em;text-transform:uppercase;
+}
+.rail__count{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:0}
+.list{list-style:none;margin:0;padding:0;max-height:52vh;overflow-y:auto}
+.list li + li{border-top:1px solid var(--line)}
+.clip{
+  display:flex;align-items:flex-start;gap:12px;
+  width:100%;text-align:left;
+  padding:11px 16px 11px 13px;
+  border-left:3px solid transparent;
+  transition:background .15s ease, border-color .15s ease;
+}
+.clip:hover{background:var(--surface-2)}
+.clip[aria-current="true"]{border-left-color:var(--amber);background:var(--surface-2)}
+.clip[aria-current="true"] .clip__no{color:var(--amber)}
+.clip__no{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
+.clip__body{min-width:0}
+.clip__name{display:block;font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.clip__id{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+
+.adder{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:8px}
+.adder label{font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.adder input{
+  width:100%;padding:9px 10px;
+  background:var(--ink);color:var(--text);
+  border:1px solid var(--line);border-radius:3px;
+  font-family:var(--mono);font-size:12px;
+}
+.adder input::placeholder{color:#5C6474}
+.row{display:flex;gap:8px}
+.btn{
+  padding:9px 12px;border-radius:3px;
+  border:1px solid var(--line);
+  font-family:var(--display);font-size:14px;
+  letter-spacing:.08em;text-transform:uppercase;
+  transition:background .15s ease,border-color .15s ease;
+}
+.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn--go{background:var(--amber);color:var(--ink);border-color:var(--amber);flex:1}
+.btn--go:hover{background:#FFB53D;border-color:#FFB53D}
+.note{font-size:12px;color:var(--muted);min-height:1.2em}
+.note[data-tone="bad"]{color:#FF8A7A}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding:16px;gap:16px}
+  .list{max-height:none}
+  .slate__title{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <h1>Drive 영상 플레이어</h1>
+  <p>구글 드라이브 파일을 그대로 스트리밍합니다</p>
+</header>
+
+<div class="wrap">
+  <section class="stage">
+    <div class="slate">
+      <span class="slate__mark" id="mark">--</span>
+      <span class="slate__title" id="title">재생 중인 영상 없음</span>
+      <span class="slate__id" id="fid"></span>
+    </div>
+    <div class="stripe" aria-hidden="true"></div>
+    <div class="frame" id="frame">
+      <div class="empty" id="empty">
+        <strong>목록이 비어 있습니다</strong>
+        <span>오른쪽에 드라이브 공유 링크를 붙여넣으면 바로 재생됩니다. 각 파일의 공유 설정에서 시청자의 Google 계정을 뷰어로 추가해 두세요.</span>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <div class="rail__head">영상 목록 <span class="rail__count" id="count">0</span></div>
+    <ol class="list" id="list"></ol>
+
+    <div class="adder">
+      <label for="link">드라이브 링크 추가</label>
+      <input id="link" type="text" placeholder="https://drive.google.com/file/d/.../view" autocomplete="off">
+      <input id="name" type="text" placeholder="표시할 이름 (선택)" autocomplete="off">
+      <div class="row">
+        <button class="btn btn--go" id="add">추가</button>
+        <button class="btn" id="copy">코드 복사</button>
+      </div>
+      <p class="note" id="note"></p>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ============================================================
+   여기에 영상을 직접 넣어두면 페이지를 열자마자 목록에 나옵니다.
+   id 에는 공유 링크의 /d/ 와 /view 사이 문자열만 넣으세요.
+   ============================================================ */
+let CLIPS = [
+  // { name: "예시 영상", id: "1AbCdEfGhIjKlMnOpQrStUvWxYz" },
+];
+
+const $ = (s) => document.querySelector(s);
+const listEl = $("#list"), frameEl = $("#frame"), emptyEl = $("#empty");
+const titleEl = $("#title"), markEl = $("#mark"), fidEl = $("#fid");
+const countEl = $("#count"), noteEl = $("#note");
+let current = -1;
+
+/* 공유 링크에서 파일 ID만 뽑아냅니다. 형식이 달라도 대부분 처리됩니다. */
+function parseId(input) {
+  const s = (input || "").trim();
+  if (!s) return null;
+  const m = s.match(/\/d\/([a-zA-Z0-9_-]{10,})/)
+        || s.match(/[?&]id=([a-zA-Z0-9_-]{10,})/)
+        || s.match(/^([a-zA-Z0-9_-]{20,})$/);
+  return m ? m[1] : null;
+}
+
+function say(msg, tone) {
+  noteEl.textContent = msg || "";
+  if (tone) noteEl.dataset.tone = tone; else noteEl.removeAttribute("data-tone");
+}
+
+function render() {
+  listEl.innerHTML = "";
+  countEl.textContent = String(CLIPS.length).padStart(2, "0");
+  CLIPS.forEach((clip, i) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.className = "clip";
+    btn.type = "button";
+    btn.setAttribute("aria-current", i === current ? "true" : "false");
+    btn.innerHTML =
+      '<span class="clip__no">' + String(i + 1).padStart(2, "0") + '</span>' +
+      '<span class="clip__body"><span class="clip__name"></span>' +
+      '<span class="clip__id">' + clip.id.slice(0, 12) + '…</span></span>';
+    btn.querySelector(".clip__name").textContent = clip.name;
+    btn.addEventListener("click", () => play(i));
+    li.appendChild(btn);
+    listEl.appendChild(li);
+  });
+}
+
+function play(i) {
+  const clip = CLIPS[i];
+  if (!clip) return;
+  current = i;
+  frameEl.innerHTML = "";
+  const f = document.createElement("iframe");
+  f.src = "https://drive.google.com/file/d/" + clip.id + "/preview";
+  f.allow = "autoplay; fullscreen; encrypted-media";
+  f.allowFullscreen = true;
+  f.title = clip.name;
+  frameEl.appendChild(f);
+  titleEl.textContent = clip.name;
+  markEl.textContent = String(i + 1).padStart(2, "0");
+  fidEl.textContent = clip.id;
+  render();
+}
+
+$("#add").addEventListener("click", () => {
+  const raw = $("#link").value;
+  const id = parseId(raw);
+  if (!id) {
+    say("링크에서 파일 ID를 찾지 못했습니다. 공유 링크 전체를 붙여넣어 주세요.", "bad");
+    return;
+  }
+  if (CLIPS.some((c) => c.id === id)) {
+    say("이미 목록에 있는 영상입니다.", "bad");
+    return;
+  }
+  const name = $("#name").value.trim() || "영상 " + String(CLIPS.length + 1).padStart(2, "0");
+  CLIPS.push({ name, id });
+  $("#link").value = "";
+  $("#name").value = "";
+  say("추가했습니다.");
+  if (emptyEl.isConnected) emptyEl.remove();
+  play(CLIPS.length - 1);
+});
+
+$("#copy").addEventListener("click", async () => {
+  if (!CLIPS.length) { say("복사할 목록이 없습니다.", "bad"); return; }
+  const code = "let CLIPS = [\n" +
+    CLIPS.map((c) => '  { name: "' + c.name.replace(/"/g, '\\"') + '", id: "' + c.id + '" },').join("\n") +
+    "\n];";
+  try {
+    await navigator.clipboard.writeText(code);
+    say("코드를 복사했습니다. 파일 안의 CLIPS 부분에 덮어쓰면 계속 유지됩니다.");
+  } catch (e) {
+    window.prompt("아래 코드를 복사해 파일의 CLIPS 부분에 덮어쓰세요", code);
+  }
+});
+
+$("#link").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add").click(); });
+$("#name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add").click(); });
+
+render();
+if (CLIPS.length) play(0);
+</script>
+</body>
+</html>
