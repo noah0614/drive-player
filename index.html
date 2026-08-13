@@ -161,6 +161,10 @@ input{font:inherit;letter-spacing:inherit}
   border:1px solid var(--line);border-radius:4px;
   padding:0 4px;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;
 }
+/* Drive가 변환하지 못해 재생되지 않는 항목 */
+.tag--warn{border-color:transparent;background:rgba(255,138,122,.16);color:var(--red)}
+.clip--stuck .clip__name{color:var(--muted)}
+.clip--stuck[aria-current="true"] .clip__name{color:var(--red)}
 
 /* transport */
 .transport{
@@ -430,6 +434,14 @@ function render() {
     meta.appendChild(tag);
     const dur = fmtTime(clip.ms);
     if (dur) { const d = document.createElement("span"); d.textContent = dur; meta.appendChild(d); }
+    /* Drive가 아직 변환하지 못한 영상. 눌러도 "처리 중" 안내만 나오므로 미리 알려준다. */
+    if (clip.ready === false) {
+      btn.classList.add("clip--stuck");
+      const w = document.createElement("span");
+      w.className = "tag tag--warn";
+      w.textContent = "재생 불가";
+      meta.appendChild(w);
+    }
     body.appendChild(meta);
 
     btn.appendChild(no);
@@ -453,16 +465,24 @@ function buildQueue(startIdx) {
 
 function step(dir) {
   if (!CLIPS.length) return;
-  if (shuffleOn) {
-    if (!queue.length) buildQueue(current);
-    let p = qpos + dir;
-    if (p >= queue.length) { buildQueue(-1); p = 0; }   // 한 바퀴 끝 → 새로 섞기
-    else if (p < 0) p = queue.length - 1;
-    qpos = p;
-    play(queue[p], true);
-  } else {
-    const n = (current + dir + CLIPS.length) % CLIPS.length;
-    play(n);
+  /* Drive가 변환하지 못한 영상은 눌러도 재생되지 않으므로 넘길 때 건너뛴다.
+     전부 재생 불가면 무한히 돌 수 있어 먼저 확인한다. */
+  if (!CLIPS.some((c) => c.ready !== false)) {
+    say("재생할 수 있는 영상이 없습니다.", "bad");
+    return;
+  }
+  for (let guard = 0; guard <= CLIPS.length; guard++) {
+    if (shuffleOn) {
+      if (!queue.length) buildQueue(current);
+      let p = qpos + dir;
+      if (p >= queue.length) { buildQueue(-1); p = 0; }   // 한 바퀴 끝 → 새로 섞기
+      else if (p < 0) p = queue.length - 1;
+      qpos = p;
+      if (CLIPS[queue[p]].ready !== false) { play(queue[p], true); return; }
+    } else {
+      current = (current + dir + CLIPS.length) % CLIPS.length;
+      if (CLIPS[current].ready !== false) { play(current); return; }
+    }
   }
 }
 
@@ -587,11 +607,16 @@ async function listFolder(folderId, depth, out) {
       if (f.mimeType === "application/vnd.google-apps.folder") {
         await listFolder(f.id, depth + 1, out);
       } else {
+        /* Drive는 트랜스코딩을 끝낸 영상에만 videoMediaMetadata를 채운다.
+           값이 없으면 "아직 처리 중인 동영상입니다"가 뜨는 파일이라 재생되지 않는다. */
+        const meta = f.videoMediaMetadata;
+        const isAudio = f.mimeType.indexOf("audio/") === 0;
         out.push({
           name: f.name,
           id: f.id,
-          kind: f.mimeType.indexOf("audio/") === 0 ? "audio" : "video",
-          ms: f.videoMediaMetadata && f.videoMediaMetadata.durationMillis
+          kind: isAudio ? "audio" : "video",
+          ms: meta && meta.durationMillis,
+          ready: isAudio || !!(meta && meta.durationMillis)
         });
       }
     }
@@ -631,14 +656,24 @@ $("#load").addEventListener("click", async () => {
     store.set("dp.folderId", $("#folder").value.trim());
     render();
     updateTransport();
+
+    /* Drive가 변환하지 못한 영상이 섞여 있으면 몇 개인지 미리 알려준다.
+       모르고 눌렀다가 "처리 중" 안내만 보는 일을 줄이기 위해서다. */
+    const stuck = found.filter((c) => c.ready === false).length;
+    const tail = stuck ? " (" + stuck + "개는 드라이브 변환이 끝나지 않아 재생할 수 없습니다)" : "";
+    say(found.length + "개를 불러왔습니다." + (shuffleOn ? " 랜덤 재생 중입니다." : "") + tail,
+        stuck ? undefined : "ok");
+
+    /* 첫 곡은 재생 가능한 것으로 고른다 */
     if (shuffleOn) {
       buildQueue(-1);
       qpos = 0;
-      say(found.length + "개를 불러왔습니다. 랜덤 재생 중입니다.", "ok");
-      play(queue[0], true);
+      const firstOk = queue.findIndex((idx) => found[idx].ready !== false);
+      if (firstOk >= 0) { qpos = firstOk; play(queue[firstOk], true); }
+      else play(queue[0], true);
     } else {
-      say(found.length + "개를 불러왔습니다.", "ok");
-      play(0);
+      const firstOk = found.findIndex((c) => c.ready !== false);
+      play(firstOk >= 0 ? firstOk : 0);
     }
   } catch (err) {
     const msg = String(err.message || err);
