@@ -16,6 +16,8 @@
   --text:#E9E7E2;
   --muted:#868FA3;
   --amber:#F5A524;
+  --green:#4ADE80;
+  --red:#FF8A7A;
   --display:"Barlow Condensed", "IBM Plex Sans KR", sans-serif;
   --body:"IBM Plex Sans KR", system-ui, sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, monospace;
@@ -31,6 +33,7 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button[disabled]{opacity:.45;cursor:not-allowed}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
 /* ---------- header ---------- */
@@ -50,7 +53,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ---------- layout ---------- */
 .wrap{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 340px;
+  grid-template-columns:minmax(0,1fr) 360px;
   gap:24px;
   padding:24px;
   align-items:start;
@@ -103,7 +106,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   background:var(--surface);
 }
 .empty strong{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase}
-.empty span{color:var(--muted);font-size:13px;max-width:34ch}
+.empty span{color:var(--muted);font-size:13px;max-width:40ch}
 
 /* ---------- rail ---------- */
 .rail{
@@ -120,8 +123,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   font-size:15px;letter-spacing:.1em;text-transform:uppercase;
 }
 .rail__count{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:0}
-.list{list-style:none;margin:0;padding:0;max-height:52vh;overflow-y:auto}
+.list{list-style:none;margin:0;padding:0;max-height:46vh;overflow-y:auto}
 .list li + li{border-top:1px solid var(--line)}
+.list:empty{display:none}
 .clip{
   display:flex;align-items:flex-start;gap:12px;
   width:100%;text-align:left;
@@ -133,19 +137,30 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .clip[aria-current="true"]{border-left-color:var(--amber);background:var(--surface-2)}
 .clip[aria-current="true"] .clip__no{color:var(--amber)}
 .clip__no{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
-.clip__body{min-width:0}
+.clip__body{min-width:0;flex:1}
 .clip__name{display:block;font-size:14px;font-weight:500;overflow-wrap:anywhere}
-.clip__id{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+.clip__meta{
+  display:flex;gap:8px;align-items:center;
+  font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;
+}
+.tag{
+  border:1px solid var(--line);border-radius:2px;
+  padding:0 4px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+}
 
-.adder{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:8px}
-.adder label{font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.adder input{
+/* ---------- panels ---------- */
+.panel{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:8px}
+.panel label{
+  font-family:var(--display);font-size:13px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+}
+.panel input{
   width:100%;padding:9px 10px;
   background:var(--ink);color:var(--text);
   border:1px solid var(--line);border-radius:3px;
   font-family:var(--mono);font-size:12px;
 }
-.adder input::placeholder{color:#5C6474}
+.panel input::placeholder{color:#5C6474}
 .row{display:flex;gap:8px}
 .btn{
   padding:9px 12px;border-radius:3px;
@@ -154,11 +169,39 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   letter-spacing:.08em;text-transform:uppercase;
   transition:background .15s ease,border-color .15s ease;
 }
-.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn:hover:not([disabled]){background:var(--surface-2);border-color:var(--muted)}
 .btn--go{background:var(--amber);color:var(--ink);border-color:var(--amber);flex:1}
-.btn--go:hover{background:#FFB53D;border-color:#FFB53D}
-.note{font-size:12px;color:var(--muted);min-height:1.2em}
-.note[data-tone="bad"]{color:#FF8A7A}
+.btn--go:hover:not([disabled]){background:#FFB53D;border-color:#FFB53D}
+.btn--sm{padding:5px 9px;font-size:13px}
+
+/* auth strip */
+.auth{
+  display:flex;align-items:center;gap:9px;
+  padding:11px 16px;
+  border-top:1px solid var(--line);
+  background:var(--surface-2);
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.auth[data-on="yes"] .dot{background:var(--green)}
+.auth[data-on="err"] .dot{background:var(--red)}
+.auth__state{font-size:12.5px;color:var(--muted);margin-right:auto;overflow-wrap:anywhere}
+.auth[data-on="yes"] .auth__state{color:var(--text)}
+
+.note{font-size:12px;color:var(--muted);min-height:1.2em;margin:0}
+.note[data-tone="bad"]{color:var(--red)}
+.note[data-tone="ok"]{color:var(--green)}
+
+details.more{border-top:1px solid var(--line)}
+details.more > summary{
+  padding:11px 16px;cursor:pointer;
+  font-family:var(--display);font-size:13px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+}
+details.more > summary:hover{color:var(--text)}
+details.more[open] > summary{color:var(--text)}
+details.more .panel{border-top:none;padding-top:0}
+.hint{font-size:11.5px;color:var(--muted);margin:0;line-height:1.45}
+.hint a{color:var(--amber)}
 
 @media (max-width:900px){
   .wrap{grid-template-columns:minmax(0,1fr);padding:16px;gap:16px}
@@ -174,7 +217,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 <header class="masthead">
   <h1>Drive 영상 플레이어</h1>
-  <p>구글 드라이브 파일을 그대로 스트리밍합니다</p>
+  <p>드라이브 폴더를 통째로 불러와 재생합니다</p>
 </header>
 
 <div class="wrap">
@@ -188,45 +231,96 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
     <div class="frame" id="frame">
       <div class="empty" id="empty">
         <strong>목록이 비어 있습니다</strong>
-        <span>오른쪽에 드라이브 공유 링크를 붙여넣으면 바로 재생됩니다. 각 파일의 공유 설정에서 시청자의 Google 계정을 뷰어로 추가해 두세요.</span>
+        <span>오른쪽에서 Google 계정을 연결한 뒤 폴더 링크를 넣으면 폴더 안의 영상이 모두 목록에 올라옵니다.</span>
       </div>
     </div>
   </section>
 
   <aside class="rail">
-    <div class="rail__head">영상 목록 <span class="rail__count" id="count">0</span></div>
+    <div class="rail__head">재생 목록 <span class="rail__count" id="count">00</span></div>
     <ol class="list" id="list"></ol>
 
-    <div class="adder">
-      <label for="link">드라이브 링크 추가</label>
-      <input id="link" type="text" placeholder="https://drive.google.com/file/d/.../view" autocomplete="off">
-      <input id="name" type="text" placeholder="표시할 이름 (선택)" autocomplete="off">
+    <div class="auth" id="auth" data-on="no">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
+      <button class="btn btn--sm" id="signin">연결</button>
+    </div>
+
+    <div class="panel">
+      <label for="folder">드라이브 폴더</label>
+      <input id="folder" type="text" placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
       <div class="row">
-        <button class="btn btn--go" id="add">추가</button>
-        <button class="btn" id="copy">코드 복사</button>
+        <button class="btn btn--go" id="load">폴더 불러오기</button>
+        <button class="btn" id="clear">비우기</button>
       </div>
       <p class="note" id="note"></p>
     </div>
+
+    <details class="more">
+      <summary>파일 링크로 직접 추가</summary>
+      <div class="panel">
+        <input id="link" type="text" placeholder="https://drive.google.com/file/d/.../view" autocomplete="off">
+        <input id="name" type="text" placeholder="표시할 이름 (선택)" autocomplete="off">
+        <button class="btn btn--go" id="add">추가</button>
+        <p class="hint">폴더 없이 개별 파일만 붙여넣을 때 사용합니다. 이 방식은 Google 연결이 필요 없습니다.</p>
+      </div>
+    </details>
+
+    <details class="more" id="setupBox">
+      <summary>OAuth 클라이언트 ID 설정</summary>
+      <div class="panel">
+        <input id="cid" type="text" placeholder="000000-xxxx.apps.googleusercontent.com" autocomplete="off">
+        <button class="btn" id="saveCid">저장</button>
+        <p class="hint">
+          Google Cloud Console에서 발급한 <strong>웹 애플리케이션</strong> 클라이언트 ID를 넣으세요.
+          승인된 JavaScript 원본에 이 페이지의 주소를 등록해야 합니다.
+          클라이언트 ID는 비밀값이 아니며 이 브라우저에만 저장됩니다.
+        </p>
+      </div>
+    </details>
   </aside>
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ============================================================
-   여기에 영상을 직접 넣어두면 페이지를 열자마자 목록에 나옵니다.
-   id 에는 공유 링크의 /d/ 와 /view 사이 문자열만 넣으세요.
+   기본값을 채워 두면 페이지를 열자마자 그대로 씁니다.
+   CLIENT_ID 를 코드에 넣어두면 보는 사람이 매번 입력할 필요가 없습니다.
    ============================================================ */
+const DEFAULT_CLIENT_ID = "";
+const DEFAULT_FOLDER    = "";
+
+/* 폴더 없이 고정 목록을 쓰고 싶을 때만 채우세요. */
 let CLIPS = [
   // { name: "예시 영상", id: "1AbCdEfGhIjKlMnOpQrStUvWxYz" },
 ];
 
+const SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly";
+const API   = "https://www.googleapis.com/drive/v3/files";
+const MAX_DEPTH = 3;
+
 const $ = (s) => document.querySelector(s);
-const listEl = $("#list"), frameEl = $("#frame"), emptyEl = $("#empty");
+const listEl = $("#list"), frameEl = $("#frame");
 const titleEl = $("#title"), markEl = $("#mark"), fidEl = $("#fid");
 const countEl = $("#count"), noteEl = $("#note");
-let current = -1;
+const authEl = $("#auth"), authStateEl = $("#authState"), signinBtn = $("#signin");
 
-/* 공유 링크에서 파일 ID만 뽑아냅니다. 형식이 달라도 대부분 처리됩니다. */
-function parseId(input) {
+let current = -1;
+let token = null;         // { value, expires }
+let tokenClient = null;
+
+/* ---------- 저장된 설정 ---------- */
+const store = {
+  get(k, fallback){ try { return localStorage.getItem(k) ?? fallback; } catch { return fallback; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch {} }
+};
+let clientId = DEFAULT_CLIENT_ID || store.get("dp.clientId", "");
+$("#cid").value = clientId;
+$("#folder").value = DEFAULT_FOLDER || store.get("dp.folderId", "");
+if (!clientId) $("#setupBox").open = true;
+
+/* ---------- 링크 파싱 ---------- */
+function parseFileId(input) {
   const s = (input || "").trim();
   if (!s) return null;
   const m = s.match(/\/d\/([a-zA-Z0-9_-]{10,})/)
@@ -234,12 +328,31 @@ function parseId(input) {
         || s.match(/^([a-zA-Z0-9_-]{20,})$/);
   return m ? m[1] : null;
 }
+function parseFolderId(input) {
+  const s = (input || "").trim();
+  if (!s) return null;
+  const m = s.match(/\/folders\/([a-zA-Z0-9_-]{10,})/)
+        || s.match(/[?&]id=([a-zA-Z0-9_-]{10,})/)
+        || s.match(/^([a-zA-Z0-9_-]{20,})$/);
+  return m ? m[1] : null;
+}
 
+/* ---------- 표시 도우미 ---------- */
 function say(msg, tone) {
   noteEl.textContent = msg || "";
   if (tone) noteEl.dataset.tone = tone; else noteEl.removeAttribute("data-tone");
 }
+function fmtTime(ms) {
+  const total = Math.round(Number(ms) / 1000);
+  if (!Number.isFinite(total) || total <= 0) return "";
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+}
 
+/* ---------- 목록 렌더 ---------- */
 function render() {
   listEl.innerHTML = "";
   countEl.textContent = String(CLIPS.length).padStart(2, "0");
@@ -249,11 +362,30 @@ function render() {
     btn.className = "clip";
     btn.type = "button";
     btn.setAttribute("aria-current", i === current ? "true" : "false");
-    btn.innerHTML =
-      '<span class="clip__no">' + String(i + 1).padStart(2, "0") + '</span>' +
-      '<span class="clip__body"><span class="clip__name"></span>' +
-      '<span class="clip__id">' + clip.id.slice(0, 12) + '…</span></span>';
-    btn.querySelector(".clip__name").textContent = clip.name;
+
+    const no = document.createElement("span");
+    no.className = "clip__no";
+    no.textContent = String(i + 1).padStart(2, "0");
+
+    const body = document.createElement("span");
+    body.className = "clip__body";
+    const nm = document.createElement("span");
+    nm.className = "clip__name";
+    nm.textContent = clip.name;
+    body.appendChild(nm);
+
+    const meta = document.createElement("span");
+    meta.className = "clip__meta";
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = clip.kind === "audio" ? "audio" : "video";
+    meta.appendChild(tag);
+    const dur = fmtTime(clip.ms);
+    if (dur) { const d = document.createElement("span"); d.textContent = dur; meta.appendChild(d); }
+    body.appendChild(meta);
+
+    btn.appendChild(no);
+    btn.appendChild(body);
     btn.addEventListener("click", () => play(i));
     li.appendChild(btn);
     listEl.appendChild(li);
@@ -277,42 +409,202 @@ function play(i) {
   render();
 }
 
+function showEmpty(strong, detail) {
+  current = -1;
+  frameEl.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "empty";
+  const s = document.createElement("strong");
+  s.textContent = strong;
+  const p = document.createElement("span");
+  p.textContent = detail;
+  box.appendChild(s); box.appendChild(p);
+  frameEl.appendChild(box);
+  titleEl.textContent = "재생 중인 영상 없음";
+  markEl.textContent = "--";
+  fidEl.textContent = "";
+}
+
+/* ---------- 인증 ---------- */
+function setAuth(state, text) {
+  authEl.dataset.on = state;
+  authStateEl.textContent = text;
+  signinBtn.textContent = state === "yes" ? "다시 연결" : "연결";
+}
+
+function tokenValid() {
+  return token && token.value && Date.now() < token.expires - 60000;
+}
+
+function initTokenClient() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) return null;
+  if (!clientId) return null;
+  return google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: SCOPE,
+    callback: (res) => {
+      if (res.error) {
+        setAuth("err", "연결 실패: " + res.error);
+        say("Google 연결에 실패했습니다. 클라이언트 ID와 승인된 원본을 확인하세요.", "bad");
+        if (pending) { pending.reject(new Error(res.error)); pending = null; }
+        return;
+      }
+      token = { value: res.access_token, expires: Date.now() + (Number(res.expires_in) || 3600) * 1000 };
+      setAuth("yes", "Google 계정 연결됨");
+      if (pending) { pending.resolve(token.value); pending = null; }
+    }
+  });
+}
+
+let pending = null;
+function getToken(interactive) {
+  if (tokenValid()) return Promise.resolve(token.value);
+  if (!clientId) return Promise.reject(new Error("NO_CLIENT_ID"));
+  if (!tokenClient) tokenClient = initTokenClient();
+  if (!tokenClient) return Promise.reject(new Error("GSI_NOT_READY"));
+  return new Promise((resolve, reject) => {
+    pending = { resolve, reject };
+    tokenClient.requestAccessToken({ prompt: interactive ? "consent" : "" });
+  });
+}
+
+signinBtn.addEventListener("click", () => {
+  if (!clientId) {
+    $("#setupBox").open = true;
+    say("먼저 OAuth 클라이언트 ID를 저장하세요.", "bad");
+    return;
+  }
+  setAuth("no", "연결 중…");
+  getToken(true).catch(() => {});
+});
+
+/* ---------- 폴더 읽기 ---------- */
+async function listFolder(folderId, depth, out) {
+  if (depth > MAX_DEPTH) return out;
+  let pageToken = "";
+  do {
+    const q = "'" + folderId + "' in parents and trashed = false and " +
+      "(mimeType contains 'video/' or mimeType contains 'audio/' or mimeType = 'application/vnd.google-apps.folder')";
+    const url = API
+      + "?q=" + encodeURIComponent(q)
+      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,videoMediaMetadata(durationMillis))")
+      + "&orderBy=name&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true"
+      + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
+
+    const res = await fetch(url, { headers: { Authorization: "Bearer " + token.value } });
+    if (res.status === 401) { token = null; throw new Error("UNAUTHORIZED"); }
+    if (res.status === 404) throw new Error("NOT_FOUND");
+    if (!res.ok) {
+      let detail = "";
+      try { const e = await res.json(); detail = e.error && e.error.message ? e.error.message : ""; } catch {}
+      throw new Error("API_" + res.status + (detail ? ": " + detail : ""));
+    }
+    const data = await res.json();
+    for (const f of (data.files || [])) {
+      if (f.mimeType === "application/vnd.google-apps.folder") {
+        await listFolder(f.id, depth + 1, out);
+      } else {
+        out.push({
+          name: f.name,
+          id: f.id,
+          kind: f.mimeType.indexOf("audio/") === 0 ? "audio" : "video",
+          ms: f.videoMediaMetadata && f.videoMediaMetadata.durationMillis
+        });
+      }
+    }
+    pageToken = data.nextPageToken || "";
+  } while (pageToken);
+  return out;
+}
+
+$("#load").addEventListener("click", async () => {
+  const folderId = parseFolderId($("#folder").value);
+  if (!folderId) {
+    say("폴더 링크에서 ID를 찾지 못했습니다. 폴더 주소 전체를 붙여넣어 주세요.", "bad");
+    return;
+  }
+  if (!clientId) {
+    $("#setupBox").open = true;
+    say("먼저 OAuth 클라이언트 ID를 저장하세요.", "bad");
+    return;
+  }
+
+  const btn = $("#load");
+  btn.disabled = true;
+  say("폴더를 읽는 중…");
+
+  try {
+    await getToken(false);
+    const found = await listFolder(folderId, 0, []);
+    found.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+
+    if (!found.length) {
+      say("폴더에서 재생 가능한 미디어 파일을 찾지 못했습니다.", "bad");
+      btn.disabled = false;
+      return;
+    }
+
+    CLIPS = found;
+    store.set("dp.folderId", $("#folder").value.trim());
+    say(found.length + "개를 불러왔습니다.", "ok");
+    render();
+    play(0);
+  } catch (err) {
+    const msg = String(err.message || err);
+    if (msg === "UNAUTHORIZED") {
+      setAuth("no", "연결이 만료됨");
+      say("연결이 만료됐습니다. ‘연결’을 다시 눌러 주세요.", "bad");
+    } else if (msg === "NOT_FOUND") {
+      say("폴더를 찾을 수 없습니다. 폴더 접근 권한이 있는 계정으로 연결했는지 확인하세요.", "bad");
+    } else if (msg === "NO_CLIENT_ID" || msg === "GSI_NOT_READY") {
+      say("Google 로그인 모듈이 준비되지 않았습니다. 새로고침 후 다시 시도하세요.", "bad");
+    } else {
+      say("불러오기 실패 — " + msg, "bad");
+    }
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$("#clear").addEventListener("click", () => {
+  CLIPS = [];
+  render();
+  showEmpty("목록이 비어 있습니다", "폴더 링크를 넣고 ‘폴더 불러오기’를 누르면 폴더 안의 영상이 모두 목록에 올라옵니다.");
+  say("");
+});
+
+/* ---------- 개별 파일 추가 ---------- */
 $("#add").addEventListener("click", () => {
-  const raw = $("#link").value;
-  const id = parseId(raw);
-  if (!id) {
-    say("링크에서 파일 ID를 찾지 못했습니다. 공유 링크 전체를 붙여넣어 주세요.", "bad");
-    return;
-  }
-  if (CLIPS.some((c) => c.id === id)) {
-    say("이미 목록에 있는 영상입니다.", "bad");
-    return;
-  }
+  const id = parseFileId($("#link").value);
+  if (!id) { say("링크에서 파일 ID를 찾지 못했습니다.", "bad"); return; }
+  if (CLIPS.some((c) => c.id === id)) { say("이미 목록에 있는 영상입니다.", "bad"); return; }
   const name = $("#name").value.trim() || "영상 " + String(CLIPS.length + 1).padStart(2, "0");
-  CLIPS.push({ name, id });
-  $("#link").value = "";
-  $("#name").value = "";
-  say("추가했습니다.");
-  if (emptyEl.isConnected) emptyEl.remove();
+  CLIPS.push({ name, id, kind: "video" });
+  $("#link").value = ""; $("#name").value = "";
+  say("추가했습니다.", "ok");
   play(CLIPS.length - 1);
 });
-
-$("#copy").addEventListener("click", async () => {
-  if (!CLIPS.length) { say("복사할 목록이 없습니다.", "bad"); return; }
-  const code = "let CLIPS = [\n" +
-    CLIPS.map((c) => '  { name: "' + c.name.replace(/"/g, '\\"') + '", id: "' + c.id + '" },').join("\n") +
-    "\n];";
-  try {
-    await navigator.clipboard.writeText(code);
-    say("코드를 복사했습니다. 파일 안의 CLIPS 부분에 덮어쓰면 계속 유지됩니다.");
-  } catch (e) {
-    window.prompt("아래 코드를 복사해 파일의 CLIPS 부분에 덮어쓰세요", code);
-  }
-});
-
 $("#link").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add").click(); });
 $("#name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add").click(); });
+$("#folder").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#load").click(); });
 
+/* ---------- 클라이언트 ID 저장 ---------- */
+$("#saveCid").addEventListener("click", () => {
+  const v = $("#cid").value.trim();
+  if (v && !/\.apps\.googleusercontent\.com$/.test(v)) {
+    say("클라이언트 ID 형식이 아닙니다. .apps.googleusercontent.com 으로 끝나야 합니다.", "bad");
+    return;
+  }
+  clientId = v;
+  store.set("dp.clientId", v);
+  tokenClient = null;
+  token = null;
+  setAuth("no", v ? "Google 계정 연결 안 됨" : "클라이언트 ID 없음");
+  say(v ? "저장했습니다. ‘연결’을 눌러 로그인하세요." : "클라이언트 ID를 비웠습니다.", v ? "ok" : undefined);
+});
+
+/* ---------- 시작 ---------- */
+setAuth("no", clientId ? "Google 계정 연결 안 됨" : "클라이언트 ID 없음");
 render();
 if (CLIPS.length) play(0);
 </script>
