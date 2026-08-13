@@ -4,232 +4,238 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Drive 영상 플레이어</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" as="style" crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <style>
 :root{
-  --ink:#12141A;
-  --surface:#1A1D26;
-  --surface-2:#212632;
-  --line:#2C3140;
-  --text:#E9E7E2;
-  --muted:#868FA3;
-  --amber:#F5A524;
+  --bg:#0F1114;
+  --surface:#16191F;
+  --surface-2:#1D212A;
+  --line:#252A34;
+  --line-soft:#1E222B;
+  --text:#ECEDEF;
+  --muted:#8B92A0;
+  --accent:#F5A524;
+  --accent-soft:rgba(245,165,36,.14);
   --green:#4ADE80;
   --red:#FF8A7A;
-  --display:"Barlow Condensed", "IBM Plex Sans KR", sans-serif;
-  --body:"IBM Plex Sans KR", system-ui, sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, monospace;
+  --sans:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+         system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r:10px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
-  background:var(--ink);
+  background:var(--bg);
   color:var(--text);
-  font-family:var(--body);
+  font-family:var(--sans);
   font-size:15px;
-  line-height:1.5;
+  line-height:1.6;
+  letter-spacing:-.01em;
   -webkit-font-smoothing:antialiased;
 }
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-button[disabled]{opacity:.45;cursor:not-allowed}
-:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;letter-spacing:inherit}
+button[disabled]{opacity:.35;cursor:not-allowed}
+input{font:inherit;letter-spacing:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 
 /* ---------- header ---------- */
 .masthead{
-  display:flex;align-items:baseline;gap:14px;
-  padding:20px 24px 16px;
-  border-bottom:1px solid var(--line);
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding:22px 28px;
+  border-bottom:1px solid var(--line-soft);
 }
-.masthead h1{
-  margin:0;
-  font-family:var(--display);
-  font-size:26px;font-weight:600;
-  letter-spacing:.08em;text-transform:uppercase;
-}
-.masthead p{margin:0;color:var(--muted);font-size:13px}
+.masthead h1{margin:0;font-size:19px;font-weight:600;letter-spacing:-.02em}
+.masthead p{margin:0;color:var(--muted);font-size:13.5px}
 
 /* ---------- layout ---------- */
 .wrap{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 360px;
-  gap:24px;
-  padding:24px;
+  grid-template-columns:minmax(0,1fr) 344px;
+  gap:20px;
+  padding:20px 28px 32px;
   align-items:start;
-  max-width:1600px;margin:0 auto;
+  max-width:1560px;margin:0 auto;
 }
 
 /* ---------- stage ---------- */
 .stage{min-width:0}
 .slate{
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  padding:12px 16px;
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-bottom:none;
-  border-radius:4px 4px 0 0;
+  display:flex;align-items:center;gap:12px;
+  padding:0 4px 12px;
 }
 .slate__mark{
-  font-family:var(--mono);font-size:12px;
-  color:var(--ink);background:var(--amber);
-  padding:2px 7px;border-radius:2px;font-weight:500;
+  font-family:var(--mono);font-size:11.5px;font-weight:500;
+  color:var(--accent);background:var(--accent-soft);
+  padding:3px 8px;border-radius:5px;
+  flex:none;
 }
 .slate__title{
-  font-family:var(--display);
-  font-size:20px;letter-spacing:.04em;
-  text-transform:uppercase;
+  font-size:15.5px;font-weight:600;
   margin-right:auto;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.slate__id{font-family:var(--mono);font-size:11px;color:var(--muted)}
-/* signature: clapper stripe between slate and frame */
-.stripe{
-  height:7px;
-  background:repeating-linear-gradient(115deg,
-    var(--text) 0 14px, var(--ink) 14px 28px);
-  opacity:.85;
+.slate__id{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  flex:none;
 }
 .frame{
   position:relative;
   aspect-ratio:16/9;
   background:#000;
-  border:1px solid var(--line);
-  border-top:none;
-  border-radius:0 0 4px 4px;
+  border:1px solid var(--line-soft);
+  border-radius:var(--r);
   overflow:hidden;
 }
 .frame iframe{width:100%;height:100%;border:0;display:block}
 .empty{
   position:absolute;inset:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:8px;text-align:center;padding:24px;
+  gap:7px;text-align:center;padding:28px;
   background:var(--surface);
 }
-.empty strong{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase}
-.empty span{color:var(--muted);font-size:13px;max-width:40ch}
+.empty strong{font-size:15.5px;font-weight:600}
+.empty span{color:var(--muted);font-size:13.5px;max-width:42ch;line-height:1.65}
 
 /* ---------- rail ---------- */
 .rail{
   background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:4px;
+  border:1px solid var(--line-soft);
+  border-radius:var(--r);
   overflow:hidden;
 }
 .rail__head{
   display:flex;align-items:center;gap:10px;
-  padding:12px 16px;
-  border-bottom:1px solid var(--line);
-  font-family:var(--display);
-  font-size:15px;letter-spacing:.1em;text-transform:uppercase;
+  padding:13px 14px;
+  border-bottom:1px solid var(--line-soft);
+  font-size:13.5px;font-weight:600;
 }
-.rail__count{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:0;margin-left:auto}
+.rail__count{
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  margin-left:auto;font-weight:400;
+}
 
 /* shuffle toggle */
 .toggle{
   display:inline-flex;align-items:center;gap:5px;
-  padding:3px 8px;
-  border:1px solid var(--line);border-radius:3px;
-  font-family:var(--display);font-size:12px;
-  letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 9px;
+  border:1px solid var(--line);border-radius:6px;
+  font-size:12.5px;font-weight:500;
   color:var(--muted);
   transition:color .15s ease,background .15s ease,border-color .15s ease;
 }
 .toggle:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
-.toggle[aria-pressed="true"]{color:var(--ink);background:var(--amber);border-color:var(--amber)}
+.toggle[aria-pressed="true"]{
+  color:var(--accent);background:var(--accent-soft);border-color:transparent;
+}
 .toggle svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 
-/* transport controls */
-.transport{
-  display:flex;gap:8px;
-  padding:10px 16px;
-  border-top:1px solid var(--line);
-}
-.transport .btn{flex:1;padding:7px 10px;font-size:13px}
-.list{list-style:none;margin:0;padding:0;max-height:46vh;overflow-y:auto}
-.list li + li{border-top:1px solid var(--line)}
+/* list */
+.list{list-style:none;margin:0;padding:6px;max-height:44vh;overflow-y:auto}
 .list:empty{display:none}
 .clip{
-  display:flex;align-items:flex-start;gap:12px;
+  display:flex;align-items:flex-start;gap:11px;
   width:100%;text-align:left;
-  padding:11px 16px 11px 13px;
-  border-left:3px solid transparent;
-  transition:background .15s ease, border-color .15s ease;
+  padding:9px 10px;
+  border-radius:7px;
+  transition:background .14s ease;
 }
 .clip:hover{background:var(--surface-2)}
-.clip[aria-current="true"]{border-left-color:var(--amber);background:var(--surface-2)}
-.clip[aria-current="true"] .clip__no{color:var(--amber)}
-.clip__no{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
+.clip[aria-current="true"]{background:var(--accent-soft)}
+.clip[aria-current="true"] .clip__no,
+.clip[aria-current="true"] .clip__name{color:var(--accent)}
+.clip__no{
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  padding-top:2px;flex:none;
+}
 .clip__body{min-width:0;flex:1}
-.clip__name{display:block;font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.clip__name{display:block;font-size:13.5px;font-weight:500;line-height:1.45;overflow-wrap:anywhere}
 .clip__meta{
-  display:flex;gap:8px;align-items:center;
-  font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;
+  display:flex;gap:7px;align-items:center;
+  font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px;
 }
 .tag{
-  border:1px solid var(--line);border-radius:2px;
-  padding:0 4px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:4px;
+  padding:0 4px;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;
 }
 
-/* ---------- panels ---------- */
-.panel{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:8px}
-.panel label{
-  font-family:var(--display);font-size:13px;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+/* transport */
+.transport{
+  display:flex;gap:7px;
+  padding:10px 14px;
+  border-top:1px solid var(--line-soft);
 }
-.panel input{
-  width:100%;padding:9px 10px;
-  background:var(--ink);color:var(--text);
-  border:1px solid var(--line);border-radius:3px;
-  font-family:var(--mono);font-size:12px;
-}
-.panel input::placeholder{color:#5C6474}
-.row{display:flex;gap:8px}
-.btn{
-  padding:9px 12px;border-radius:3px;
-  border:1px solid var(--line);
-  font-family:var(--display);font-size:14px;
-  letter-spacing:.08em;text-transform:uppercase;
-  transition:background .15s ease,border-color .15s ease;
-}
-.btn:hover:not([disabled]){background:var(--surface-2);border-color:var(--muted)}
-.btn--go{background:var(--amber);color:var(--ink);border-color:var(--amber);flex:1}
-.btn--go:hover:not([disabled]){background:#FFB53D;border-color:#FFB53D}
-.btn--sm{padding:5px 9px;font-size:13px}
+.transport .btn{flex:1;padding:7px 10px;font-size:13px}
 
 /* auth strip */
 .auth{
   display:flex;align-items:center;gap:9px;
-  padding:11px 16px;
-  border-top:1px solid var(--line);
+  padding:11px 14px;
+  border-top:1px solid var(--line-soft);
   background:var(--surface-2);
 }
-.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex:none}
 .auth[data-on="yes"] .dot{background:var(--green)}
 .auth[data-on="err"] .dot{background:var(--red)}
 .auth__state{font-size:12.5px;color:var(--muted);margin-right:auto;overflow-wrap:anywhere}
 .auth[data-on="yes"] .auth__state{color:var(--text)}
 
-.note{font-size:12px;color:var(--muted);min-height:1.2em;margin:0}
+/* panels */
+.panel{padding:14px;border-top:1px solid var(--line-soft);display:grid;gap:8px}
+.panel label{font-size:12.5px;font-weight:500;color:var(--muted)}
+.panel input{
+  width:100%;padding:9px 11px;
+  background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:7px;
+  font-family:var(--mono);font-size:12px;letter-spacing:0;
+  transition:border-color .15s ease;
+}
+.panel input:hover{border-color:var(--muted)}
+.panel input::placeholder{color:#5C6270}
+.row{display:flex;gap:7px}
+.btn{
+  padding:9px 12px;border-radius:7px;
+  border:1px solid var(--line);
+  font-size:13.5px;font-weight:500;
+  transition:background .15s ease,border-color .15s ease;
+}
+.btn:hover:not([disabled]){background:var(--surface-2);border-color:var(--muted)}
+.btn--go{background:var(--accent);color:#181206;border-color:var(--accent);flex:1;font-weight:600}
+.btn--go:hover:not([disabled]){background:#FFB53D;border-color:#FFB53D}
+.btn--sm{padding:5px 10px;font-size:12.5px}
+
+.note{font-size:12.5px;color:var(--muted);min-height:1.2em;margin:0;line-height:1.5}
 .note[data-tone="bad"]{color:var(--red)}
 .note[data-tone="ok"]{color:var(--green)}
 
-details.more{border-top:1px solid var(--line)}
+details.more{border-top:1px solid var(--line-soft)}
 details.more > summary{
-  padding:11px 16px;cursor:pointer;
-  font-family:var(--display);font-size:13px;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  padding:11px 14px;cursor:pointer;
+  font-size:12.5px;font-weight:500;color:var(--muted);
+  list-style:none;
+  transition:color .15s ease;
 }
-details.more > summary:hover{color:var(--text)}
+details.more > summary::-webkit-details-marker{display:none}
+details.more > summary::before{content:"+ ";font-family:var(--mono)}
+details.more[open] > summary::before{content:"− "}
+details.more > summary:hover,
 details.more[open] > summary{color:var(--text)}
 details.more .panel{border-top:none;padding-top:0}
-.hint{font-size:11.5px;color:var(--muted);margin:0;line-height:1.45}
-.hint a{color:var(--amber)}
+.hint{font-size:11.5px;color:var(--muted);margin:0;line-height:1.55}
+.hint strong{color:var(--text);font-weight:500}
+
+/* scrollbar */
+.list::-webkit-scrollbar{width:9px}
+.list::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;border:3px solid var(--surface)}
+.list::-webkit-scrollbar-track{background:transparent}
 
 @media (max-width:900px){
+  .masthead{padding:18px 18px}
   .wrap{grid-template-columns:minmax(0,1fr);padding:16px;gap:16px}
   .list{max-height:none}
-  .slate__title{font-size:17px}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important;animation:none !important}
@@ -250,7 +256,6 @@ details.more .panel{border-top:none;padding-top:0}
       <span class="slate__title" id="title">재생 중인 영상 없음</span>
       <span class="slate__id" id="fid"></span>
     </div>
-    <div class="stripe" aria-hidden="true"></div>
     <div class="frame" id="frame">
       <div class="empty" id="empty">
         <strong>목록이 비어 있습니다</strong>
@@ -274,8 +279,8 @@ details.more .panel{border-top:none;padding-top:0}
     <ol class="list" id="list"></ol>
 
     <div class="transport">
-      <button class="btn" id="prev" type="button">◀ 이전</button>
-      <button class="btn" id="next" type="button">다음 ▶</button>
+      <button class="btn" id="prev" type="button">← 이전</button>
+      <button class="btn" id="next" type="button">다음 →</button>
     </div>
 
     <div class="auth" id="auth" data-on="no">
