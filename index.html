@@ -250,8 +250,9 @@ input{font:inherit}
 
 .list{list-style:none;margin:0;padding:var(--sp-2);max-height:46vh;overflow-y:auto;overscroll-behavior:contain}
 .list:empty{display:none}
+/* 한 줄 = 한 항목. 목록을 최대한 많이 보여주기 위한 구조입니다. */
 .clip{
-  display:flex;align-items:flex-start;gap:var(--sp-3);
+  display:flex;align-items:center;gap:var(--sp-2);
   width:100%;text-align:left;
   padding:var(--sp-2) var(--sp-3);
   border-radius:var(--r-sm);
@@ -262,13 +263,16 @@ input{font:inherit}
 .clip[aria-current="true"] .clip__no,
 .clip[aria-current="true"] .clip__name{color:var(--accent)}
 .clip__no{
-  flex:none;padding-top:2px;
-  font-family:var(--mono);font-size:var(--fs-sm);color:var(--muted);
+  flex:none;width:22px;
+  font-family:var(--mono);font-size:var(--fs-xs);color:var(--muted);
 }
-.clip__body{min-width:0;flex:1}
-.clip__name{display:block;font-size:var(--fs-md);font-weight:600;line-height:1.45;overflow-wrap:anywhere}
-.clip__meta{
-  display:flex;align-items:center;gap:var(--sp-2);margin-top:3px;
+.clip__name{
+  flex:1;min-width:0;
+  font-size:var(--fs-md);font-weight:600;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.clip__dur{
+  flex:none;
   font-family:var(--mono);font-size:var(--fs-xs);color:var(--muted);
 }
 .tag{
@@ -524,37 +528,42 @@ function render() {
     btn.type = "button";
     btn.setAttribute("aria-current", i === current ? "true" : "false");
 
+    /* 한 줄에 담아 목록을 최대한 많이 보여줍니다.
+       이름이 길면 잘리지만 마우스를 올리면 전체가 뜹니다. */
     const no = document.createElement("span");
     no.className = "clip__no";
     no.textContent = String(i + 1).padStart(2, "0");
 
-    const body = document.createElement("span");
-    body.className = "clip__body";
     const nm = document.createElement("span");
     nm.className = "clip__name";
     nm.textContent = clip.name;
-    body.appendChild(nm);
+    nm.title = clip.name;
 
-    const meta = document.createElement("span");
-    meta.className = "clip__meta";
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.textContent = clip.kind === "audio" ? "audio" : "video";
-    meta.appendChild(tag);
-    const dur = fmtTime(clip.ms);
-    if (dur) { const d = document.createElement("span"); d.textContent = dur; meta.appendChild(d); }
+    btn.appendChild(no);
+    btn.appendChild(nm);
+
+    /* 대부분이 영상이라 video 배지는 자리만 차지합니다. 예외인 것만 표시합니다. */
+    if (clip.kind === "audio") {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = "audio";
+      btn.appendChild(tag);
+    }
     /* Drive가 아직 변환하지 못한 영상. 눌러도 "처리 중" 안내만 나오므로 미리 알려준다. */
     if (clip.ready === false) {
       btn.classList.add("clip--stuck");
       const w = document.createElement("span");
       w.className = "tag tag--warn";
       w.textContent = "재생 불가";
-      meta.appendChild(w);
+      btn.appendChild(w);
     }
-    body.appendChild(meta);
-
-    btn.appendChild(no);
-    btn.appendChild(body);
+    const dur = fmtTime(clip.ms);
+    if (dur) {
+      const d = document.createElement("span");
+      d.className = "clip__dur";
+      d.textContent = dur;
+      btn.appendChild(d);
+    }
     btn.addEventListener("click", () => play(i));
     li.appendChild(btn);
     listEl.appendChild(li);
