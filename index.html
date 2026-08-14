@@ -309,10 +309,10 @@ input{font:inherit}
 
   .stage{display:flex;flex-direction:column;min-height:0;height:100%}
   .frame{
-    min-height:0;                 /* flex 안에서 줄어들 수 있게 */
-    max-height:100%;
-    width:auto;max-width:100%;
-    margin:0 auto;
+    flex:1 1 auto;                /* 남은 높이를 모두 차지 */
+    min-height:0;
+    aspect-ratio:auto;            /* 높이를 화면에 맡기고, 영상 비율은 Drive 플레이어가 맞춥니다 */
+    width:100%;
   }
 
   .rail{display:flex;flex-direction:column;min-height:0;height:100%}
