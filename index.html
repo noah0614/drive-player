@@ -49,6 +49,7 @@ input{font:inherit;letter-spacing:inherit}
 }
 .masthead h1{margin:0;font-size:19px;font-weight:600;letter-spacing:-.02em}
 .masthead p{margin:0;color:var(--muted);font-size:13.5px}
+.masthead .auth{margin-left:auto;border:1px solid var(--line);border-radius:8px}
 
 /* ---------- layout ---------- */
 .wrap{
@@ -133,6 +134,30 @@ input{font:inherit;letter-spacing:inherit}
 .toggle svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 
+/* search */
+.search{position:relative;padding:10px 14px 4px}
+.search input{
+  width:100%;padding:8px 30px 8px 11px;
+  background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:7px;
+  font-size:13px;
+  transition:border-color .15s ease;
+  -webkit-appearance:none;appearance:none;
+}
+.search input:hover{border-color:var(--muted)}
+.search input:focus{border-color:var(--accent);outline:none}
+.search input::placeholder{color:#5C6270}
+.search input::-webkit-search-cancel-button{display:none}
+.search__x{
+  position:absolute;right:20px;top:50%;transform:translateY(-30%);
+  color:var(--muted);font-size:12px;line-height:1;padding:4px;
+}
+.search__x:hover{color:var(--text)}
+.list__none{
+  margin:0;padding:18px 14px 22px;
+  text-align:center;color:var(--muted);font-size:13px;
+}
+
 /* list */
 .list{list-style:none;margin:0;padding:6px;max-height:44vh;overflow-y:auto}
 .list:empty{display:none}
@@ -177,8 +202,7 @@ input{font:inherit;letter-spacing:inherit}
 /* auth strip */
 .auth{
   display:flex;align-items:center;gap:9px;
-  padding:11px 14px;
-  border-top:1px solid var(--line-soft);
+  padding:7px 10px 7px 12px;
   background:var(--surface-2);
 }
 .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex:none}
@@ -251,6 +275,11 @@ details.more .panel{border-top:none;padding-top:0}
 <header class="masthead">
   <h1>Drive 영상 플레이어</h1>
   <p>드라이브 폴더를 통째로 불러와 재생합니다</p>
+  <div class="auth" id="auth" data-on="no">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
+    <button class="btn btn--sm" id="signin">연결</button>
+  </div>
 </header>
 
 <div class="wrap">
@@ -280,17 +309,18 @@ details.more .panel{border-top:none;padding-top:0}
       </button>
       <span class="rail__count" id="count">00</span>
     </div>
+
+    <div class="search">
+      <input id="q" type="search" placeholder="제목 검색" autocomplete="off" spellcheck="false">
+      <button class="search__x" id="qx" type="button" title="검색어 지우기" hidden>✕</button>
+    </div>
+
     <ol class="list" id="list"></ol>
+    <p class="list__none" id="noHit" hidden>검색 결과가 없습니다</p>
 
     <div class="transport">
       <button class="btn" id="prev" type="button">← 이전</button>
       <button class="btn" id="next" type="button">다음 →</button>
-    </div>
-
-    <div class="auth" id="auth" data-on="no">
-      <span class="dot" aria-hidden="true"></span>
-      <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
-      <button class="btn btn--sm" id="signin">연결</button>
     </div>
 
     <div class="panel">
@@ -356,6 +386,9 @@ let current = -1;
 let token = null;         // { value, expires }
 let tokenClient = null;
 
+/* 검색어. 목록 표시뿐 아니라 이전/다음·셔플이 도는 범위도 이 값으로 좁힙니다. */
+let filter = "";
+
 /* 셔플: 한 바퀴 도는 동안 같은 영상이 다시 나오지 않도록 순서를 미리 섞어 둡니다. */
 let shuffleOn = false;
 let queue = [];           // 재생 순서(인덱스 배열)
@@ -405,10 +438,32 @@ function fmtTime(ms) {
 }
 
 /* ---------- 목록 렌더 ---------- */
+/* 검색어에 걸리는 항목인가 */
+function matches(i) {
+  if (!filter) return true;
+  const c = CLIPS[i];
+  return !!c && c.name.toLowerCase().indexOf(filter) >= 0;
+}
+
+/* 지금 넘기기(이전/다음·셔플)로 갈 수 있는 항목인가.
+   재생되지 않는 영상과 검색에서 빠진 영상을 함께 걸러냅니다. */
+function playable(i) {
+  return !!CLIPS[i] && CLIPS[i].ready !== false && matches(i);
+}
+
 function render() {
   listEl.innerHTML = "";
-  countEl.textContent = String(CLIPS.length).padStart(2, "0");
+  const shown = CLIPS.reduce((n, _, i) => n + (matches(i) ? 1 : 0), 0);
+  countEl.textContent = filter
+    ? shown + " / " + CLIPS.length
+    : String(CLIPS.length).padStart(2, "0");
+
+  const searchBox = document.querySelector(".search");
+  if (searchBox) searchBox.hidden = CLIPS.length === 0;
+  $("#noHit").hidden = !(filter && shown === 0 && CLIPS.length > 0);
+
   CLIPS.forEach((clip, i) => {
+    if (!matches(i)) return;          /* 번호는 원래 위치를 유지합니다 */
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "clip";
@@ -465,10 +520,10 @@ function buildQueue(startIdx) {
 
 function step(dir) {
   if (!CLIPS.length) return;
-  /* Drive가 변환하지 못한 영상은 눌러도 재생되지 않으므로 넘길 때 건너뛴다.
-     전부 재생 불가면 무한히 돌 수 있어 먼저 확인한다. */
-  if (!CLIPS.some((c) => c.ready !== false)) {
-    say("재생할 수 있는 영상이 없습니다.", "bad");
+  /* 재생되지 않는 영상과 검색에서 빠진 영상은 건너뛴다.
+     갈 수 있는 곳이 하나도 없으면 무한히 돌 수 있어 먼저 확인한다. */
+  if (!CLIPS.some((_, i) => playable(i))) {
+    say(filter ? "검색 결과 중 재생할 수 있는 영상이 없습니다." : "재생할 수 있는 영상이 없습니다.", "bad");
     return;
   }
   for (let guard = 0; guard <= CLIPS.length; guard++) {
@@ -478,10 +533,10 @@ function step(dir) {
       if (p >= queue.length) { buildQueue(-1); p = 0; }   // 한 바퀴 끝 → 새로 섞기
       else if (p < 0) p = queue.length - 1;
       qpos = p;
-      if (CLIPS[queue[p]].ready !== false) { play(queue[p], true); return; }
+      if (playable(queue[p])) { play(queue[p], true); return; }
     } else {
       current = (current + dir + CLIPS.length) % CLIPS.length;
-      if (CLIPS[current].ready !== false) { play(current); return; }
+      if (playable(current)) { play(current); return; }
     }
   }
 }
@@ -668,11 +723,11 @@ $("#load").addEventListener("click", async () => {
     if (shuffleOn) {
       buildQueue(-1);
       qpos = 0;
-      const firstOk = queue.findIndex((idx) => found[idx].ready !== false);
+      const firstOk = queue.findIndex((idx) => playable(idx));
       if (firstOk >= 0) { qpos = firstOk; play(queue[firstOk], true); }
       else play(queue[0], true);
     } else {
-      const firstOk = found.findIndex((c) => c.ready !== false);
+      const firstOk = found.findIndex((_, i) => playable(i));
       play(firstOk >= 0 ? firstOk : 0);
     }
   } catch (err) {
@@ -717,6 +772,22 @@ $("#link").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add")
 $("#name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add").click(); });
 $("#folder").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#load").click(); });
 
+/* ---------- 검색 ---------- */
+function applyFilter(v) {
+  filter = (v || "").trim().toLowerCase();
+  $("#qx").hidden = !filter;
+  render();
+}
+$("#q").addEventListener("input", (e) => applyFilter(e.target.value));
+$("#q").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { $("#q").value = ""; applyFilter(""); }
+});
+$("#qx").addEventListener("click", () => {
+  $("#q").value = "";
+  applyFilter("");
+  $("#q").focus();
+});
+
 /* ---------- 셔플 / 이전 / 다음 ---------- */
 $("#shuffle").addEventListener("click", () => {
   shuffleOn = !shuffleOn;
@@ -754,7 +825,8 @@ $("#saveCid").addEventListener("click", () => {
 
 /* ---------- 시작 ---------- */
 setAuth("no", clientId ? "Google 계정 연결 안 됨" : "클라이언트 ID 없음");
-shuffleOn = store.get("dp.shuffle", "0") === "1";
+/* 기본값은 랜덤 재생. 사용자가 끄면 그 선택이 저장돼 다음에도 유지됩니다. */
+shuffleOn = store.get("dp.shuffle", "1") === "1";
 $("#shuffle").setAttribute("aria-pressed", String(shuffleOn));
 render();
 updateTransport();
