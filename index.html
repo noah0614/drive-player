@@ -102,7 +102,11 @@ input{font:inherit}
   padding:var(--sp-4) var(--sp-6);
   border-bottom:1px solid var(--line-soft);
 }
-.masthead h1{margin:0;font-size:var(--fs-lg);font-weight:600;letter-spacing:-.01em}
+.masthead h1{
+  display:flex;align-items:center;gap:var(--sp-2);
+  margin:0;font-size:var(--fs-lg);font-weight:600;letter-spacing:-.01em;
+}
+.logo{width:21px;height:21px;flex:none}
 
 .navtools{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
 
@@ -355,7 +359,15 @@ input{font:inherit}
 <body>
 
 <header class="masthead">
-  <h1>Google Drive Player</h1>
+  <h1>
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M12 4v56l16-28z" fill="#4285F4"/>
+      <path d="M12 4l16 28 20-11z" fill="#34A853"/>
+      <path d="M12 60l16-28 20 11z" fill="#EA4335"/>
+      <path d="M48 21L28 32l20 11 8-6a6 6 0 000-10z" fill="#FBBC04"/>
+    </svg>
+    Google Drive Player
+  </h1>
 
   <nav class="navtools">
     <details class="menu" id="folderBox">
