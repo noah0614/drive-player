@@ -304,9 +304,18 @@ input{font:inherit}
 /* 넓은 화면에서는 페이지 전체를 한 화면에 고정하고 재생목록만 스크롤합니다.
    목록이 화면 아래 끝까지 늘어나 한 번에 훨씬 많이 보입니다. */
 @media (min-width:901px){
-  body{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  /* iOS Safari의 100vh는 주소창·툴바 높이를 포함해서 실제 보이는 영역보다 큽니다.
+     그대로 두면 iPad에서 화면 아래가 툴바 뒤로 잘립니다.
+     svh(가장 작은 뷰포트 높이)는 툴바가 보이는 상태를 기준으로 하므로 잘리지 않습니다.
+     이 앱은 페이지 스크롤이 없어 툴바가 늘 표시되므로 svh가 정확히 맞습니다.
+     지원하지 않는 브라우저는 위의 vh를 씁니다. */
+  body{height:100vh;height:100svh;display:flex;flex-direction:column;overflow:hidden}
   /* width:100% 가 없으면 margin:0 auto 때문에 가로로 늘어나지 않습니다 */
-  .wrap{flex:1;min-height:0;width:100%;padding-bottom:var(--sp-5)}
+  .wrap{
+    flex:1;min-height:0;width:100%;
+    /* 홈 인디케이터가 있는 기기를 위한 여유 (해당 없으면 기본값 유지) */
+    padding-bottom:max(var(--sp-5), env(safe-area-inset-bottom, 0px));
+  }
 
   .stage{display:flex;flex-direction:column;min-height:0;height:100%}
   .frame{
