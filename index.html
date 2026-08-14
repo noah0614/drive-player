@@ -657,9 +657,10 @@ function scrollToCurrent() {
   const item = el.getBoundingClientRect();
   const target = listEl.scrollTop + (item.top - box.top) - (box.height - item.height) / 2;
   const max = listEl.scrollHeight - listEl.clientHeight;
-  const top = Math.max(0, Math.min(target, max));   /* 목록 처음·끝에서는 더 밀지 않습니다 */
-  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  listEl.scrollTo({ top: top, behavior: still ? "auto" : "smooth" });
+  /* 목록 처음·끝에서는 더 밀지 않습니다 */
+  listEl.scrollTop = Math.max(0, Math.min(target, max));
+  /* 부드러운 스크롤을 쓰지 않는 이유: 랜덤 재생은 매번 목록 반대편으로 튀는데
+     그 거리를 애니메이션하면 눈이 따라가기 어렵고, 환경에 따라 아예 동작하지 않기도 합니다. */
 }
 
 function showEmpty(strong, detail) {
