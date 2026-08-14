@@ -49,7 +49,55 @@ input{font:inherit;letter-spacing:inherit}
 }
 .masthead h1{margin:0;font-size:19px;font-weight:600;letter-spacing:-.02em}
 .masthead p{margin:0;color:var(--muted);font-size:13.5px}
-.masthead .auth{margin-left:auto;border:1px solid var(--line);border-radius:8px}
+
+/* 헤더 우측 도구 모음 */
+.navtools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.navtools .auth{border:1px solid var(--line);border-radius:8px}
+
+.menu{position:relative}
+.menu > summary{
+  list-style:none;cursor:pointer;
+  padding:7px 12px;border:1px solid var(--line);border-radius:8px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  background:var(--surface-2);
+  white-space:nowrap;
+  transition:color .15s ease,border-color .15s ease;
+}
+.menu > summary::-webkit-details-marker{display:none}
+.menu > summary::after{content:" ▾";opacity:.6}
+.menu > summary:hover{color:var(--text);border-color:var(--muted)}
+.menu[open] > summary{color:var(--accent);border-color:var(--accent)}
+.menu__panel{
+  position:absolute;right:0;top:calc(100% + 8px);z-index:60;
+  width:min(360px, calc(100vw - 40px));
+  display:grid;gap:9px;
+  padding:14px;
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 14px 34px rgba(0,0,0,.5);
+}
+.menu__panel label{font-size:12.5px;font-weight:500;color:var(--muted)}
+.menu__panel input{
+  width:100%;padding:9px 11px;
+  background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:7px;
+  font-family:var(--mono);font-size:12px;letter-spacing:0;
+  transition:border-color .15s ease;
+}
+.menu__panel input:hover{border-color:var(--muted)}
+.menu__panel input:focus{border-color:var(--accent);outline:none}
+.menu__panel input::placeholder{color:#5C6270}
+
+/* 폴더 불러오기 결과 안내 — 메뉴를 닫아도 보이도록 헤더 아래 폭 전체에 둔다 */
+.note{
+  margin:0;padding:10px 28px;
+  font-size:12.5px;color:var(--muted);line-height:1.5;
+  border-bottom:1px solid var(--line-soft);
+  background:var(--surface);
+}
+.note:empty{display:none}
+.note[data-tone="bad"]{color:var(--red)}
+.note[data-tone="ok"]{color:var(--green)}
 
 /* ---------- layout ---------- */
 .wrap{
@@ -211,18 +259,6 @@ input{font:inherit;letter-spacing:inherit}
 .auth__state{font-size:12.5px;color:var(--muted);margin-right:auto;overflow-wrap:anywhere}
 .auth[data-on="yes"] .auth__state{color:var(--text)}
 
-/* panels */
-.panel{padding:14px;border-top:1px solid var(--line-soft);display:grid;gap:8px}
-.panel label{font-size:12.5px;font-weight:500;color:var(--muted)}
-.panel input{
-  width:100%;padding:9px 11px;
-  background:var(--bg);color:var(--text);
-  border:1px solid var(--line);border-radius:7px;
-  font-family:var(--mono);font-size:12px;letter-spacing:0;
-  transition:border-color .15s ease;
-}
-.panel input:hover{border-color:var(--muted)}
-.panel input::placeholder{color:#5C6270}
 .row{display:flex;gap:7px}
 .btn{
   padding:9px 12px;border-radius:7px;
@@ -235,27 +271,6 @@ input{font:inherit;letter-spacing:inherit}
 .btn--go:hover:not([disabled]){background:#FFB53D;border-color:#FFB53D}
 .btn--sm{padding:5px 10px;font-size:12.5px}
 
-.note{
-  font-size:12.5px;color:var(--muted);margin:0;line-height:1.5;
-  padding:11px 14px;border-top:1px solid var(--line-soft);
-}
-.note:empty{display:none}          /* 안내가 없을 땐 자리를 차지하지 않습니다 */
-.note[data-tone="bad"]{color:var(--red)}
-.note[data-tone="ok"]{color:var(--green)}
-
-details.more{border-top:1px solid var(--line-soft)}
-details.more > summary{
-  padding:11px 14px;cursor:pointer;
-  font-size:12.5px;font-weight:500;color:var(--muted);
-  list-style:none;
-  transition:color .15s ease;
-}
-details.more > summary::-webkit-details-marker{display:none}
-details.more > summary::before{content:"+ ";font-family:var(--mono)}
-details.more[open] > summary::before{content:"− "}
-details.more > summary:hover,
-details.more[open] > summary{color:var(--text)}
-details.more .panel{border-top:none;padding-top:0}
 .hint{font-size:11.5px;color:var(--muted);margin:0;line-height:1.55}
 .hint strong{color:var(--text);font-weight:500}
 
@@ -279,12 +294,44 @@ details.more .panel{border-top:none;padding-top:0}
 <header class="masthead">
   <h1>Drive 영상 플레이어</h1>
   <p>드라이브 폴더를 통째로 불러와 재생합니다</p>
-  <div class="auth" id="auth" data-on="no">
-    <span class="dot" aria-hidden="true"></span>
-    <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
-    <button class="btn btn--sm" id="signin">연결</button>
-  </div>
+
+  <nav class="navtools">
+    <details class="menu" id="folderBox">
+      <summary>드라이브 폴더</summary>
+      <div class="menu__panel">
+        <label for="folder">폴더 주소</label>
+        <input id="folder" type="text"
+               placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+        <div class="row">
+          <button class="btn btn--go" id="load">폴더 불러오기</button>
+          <button class="btn" id="clear">비우기</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="menu" id="setupBox">
+      <summary>설정</summary>
+      <div class="menu__panel">
+        <label for="cid">OAuth 클라이언트 ID</label>
+        <input id="cid" type="text" placeholder="000000-xxxx.apps.googleusercontent.com" autocomplete="off">
+        <button class="btn" id="saveCid">저장</button>
+        <p class="hint">
+          Google Cloud Console에서 발급한 <strong>웹 애플리케이션</strong> 클라이언트 ID를 넣으세요.
+          승인된 JavaScript 원본에 이 페이지의 주소를 등록해야 합니다.
+          클라이언트 ID는 비밀값이 아니며 이 브라우저에만 저장됩니다.
+        </p>
+      </div>
+    </details>
+
+    <div class="auth" id="auth" data-on="no">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
+      <button class="btn btn--sm" id="signin">연결</button>
+    </div>
+  </nav>
 </header>
+
+<p class="note" id="note"></p>
 
 <div class="wrap">
   <section class="stage">
@@ -296,7 +343,7 @@ details.more .panel{border-top:none;padding-top:0}
     <div class="frame" id="frame">
       <div class="empty" id="empty">
         <strong>목록이 비어 있습니다</strong>
-        <span>오른쪽에서 Google 계정을 연결한 뒤 폴더 링크를 넣으면 폴더 안의 영상이 모두 목록에 올라옵니다.</span>
+        <span>위쪽에서 Google 계정을 연결한 뒤 ‘드라이브 폴더’에 링크를 넣으면 폴더 안의 영상이 모두 목록에 올라옵니다.</span>
       </div>
     </div>
   </section>
@@ -326,34 +373,6 @@ details.more .panel{border-top:none;padding-top:0}
       <button class="btn" id="prev" type="button">← 이전</button>
       <button class="btn" id="next" type="button">다음 →</button>
     </div>
-
-    <!-- 접었을 때도 결과 안내는 보여야 하므로 패널 밖에 둡니다 -->
-    <p class="note" id="note"></p>
-
-    <details class="more" id="folderBox">
-      <summary>드라이브 폴더</summary>
-      <div class="panel">
-        <input id="folder" type="text" aria-label="드라이브 폴더 주소"
-               placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
-        <div class="row">
-          <button class="btn btn--go" id="load">폴더 불러오기</button>
-          <button class="btn" id="clear">비우기</button>
-        </div>
-      </div>
-    </details>
-
-    <details class="more" id="setupBox">
-      <summary>OAuth 클라이언트 ID 설정</summary>
-      <div class="panel">
-        <input id="cid" type="text" placeholder="000000-xxxx.apps.googleusercontent.com" autocomplete="off">
-        <button class="btn" id="saveCid">저장</button>
-        <p class="hint">
-          Google Cloud Console에서 발급한 <strong>웹 애플리케이션</strong> 클라이언트 ID를 넣으세요.
-          승인된 JavaScript 원본에 이 페이지의 주소를 등록해야 합니다.
-          클라이언트 ID는 비밀값이 아니며 이 브라우저에만 저장됩니다.
-        </p>
-      </div>
-    </details>
   </aside>
 </div>
 
@@ -751,6 +770,26 @@ $("#clear").addEventListener("click", () => {
 
 $("#folder").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#load").click(); });
 
+/* ---------- 헤더 드롭다운 ---------- */
+/* 화면 위에 떠 있는 메뉴라 바깥을 누르면 닫히는 편이 자연스럽습니다. */
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".menu[open]").forEach((d) => {
+    if (!d.contains(e.target)) d.open = false;
+  });
+});
+/* 한 번에 하나만 열리도록 합니다. */
+document.querySelectorAll(".menu").forEach((d) => {
+  d.addEventListener("toggle", () => {
+    if (!d.open) return;
+    document.querySelectorAll(".menu[open]").forEach((o) => { if (o !== d) o.open = false; });
+  });
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const open = document.querySelector(".menu[open]");
+  if (open) { open.open = false; open.querySelector("summary").focus(); }
+});
+
 /* ---------- 검색 ---------- */
 function applyFilter(v) {
   filter = (v || "").trim().toLowerCase();
@@ -806,7 +845,8 @@ $("#saveCid").addEventListener("click", () => {
 setAuth("no", clientId ? "Google 계정 연결 안 됨" : "클라이언트 ID 없음");
 /* 기본값은 랜덤 재생. 사용자가 끄면 그 선택이 저장돼 다음에도 유지됩니다. */
 shuffleOn = store.get("dp.shuffle", "1") === "1";
-$("#folderBox").open = CLIPS.length === 0;   /* 목록이 없으면 폴더 입력을 펼쳐 둡니다 */
+/* 드롭다운은 화면 위에 떠 있으므로 시작할 때는 접어 둡니다.
+   폴더를 넣어야 한다는 안내는 재생 화면 가운데에 있습니다. */
 $("#shuffle").setAttribute("aria-pressed", String(shuffleOn));
 render();
 updateTransport();
