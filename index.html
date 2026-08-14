@@ -248,7 +248,7 @@ input{font:inherit}
 }
 .search__x:hover{color:var(--text);background:var(--surface-2)}
 
-.list{list-style:none;margin:0;padding:var(--sp-2);max-height:46vh;overflow-y:auto}
+.list{list-style:none;margin:0;padding:var(--sp-2);max-height:46vh;overflow-y:auto;overscroll-behavior:contain}
 .list:empty{display:none}
 .clip{
   display:flex;align-items:flex-start;gap:var(--sp-3);
@@ -296,6 +296,28 @@ input{font:inherit}
 .list::-webkit-scrollbar{width:10px}
 .list::-webkit-scrollbar-thumb{background:var(--line);border-radius:var(--r-pill);border:3px solid var(--surface)}
 .list::-webkit-scrollbar-track{background:transparent}
+
+/* 넓은 화면에서는 페이지 전체를 한 화면에 고정하고 재생목록만 스크롤합니다.
+   목록이 화면 아래 끝까지 늘어나 한 번에 훨씬 많이 보입니다. */
+@media (min-width:901px){
+  body{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  .wrap{flex:1;min-height:0;padding-bottom:var(--sp-5)}
+
+  .stage{display:flex;flex-direction:column;min-height:0;height:100%}
+  .frame{
+    min-height:0;                 /* flex 안에서 줄어들 수 있게 */
+    max-height:100%;
+    width:auto;max-width:100%;
+    margin:0 auto;
+  }
+
+  .rail{display:flex;flex-direction:column;min-height:0;height:100%}
+  .list{
+    flex:1 1 auto;
+    max-height:none;              /* 남은 높이를 전부 차지 */
+    min-height:120px;
+  }
+}
 
 @media (max-width:900px){
   .masthead{padding:var(--sp-3) var(--sp-4)}
