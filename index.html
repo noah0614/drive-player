@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Drive 영상 플레이어</title>
+<title>Google Drive Media Player</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
@@ -101,7 +101,6 @@ input{font:inherit}
   border-bottom:1px solid var(--line-soft);
 }
 .masthead h1{margin:0;font-size:var(--fs-lg);font-weight:600;letter-spacing:-.01em}
-.masthead p{margin:0;color:var(--muted);font-size:var(--fs-md)}
 
 .navtools{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
 
@@ -341,7 +340,6 @@ input{font:inherit}
 
 @media (max-width:900px){
   .masthead{padding:var(--sp-3) var(--sp-4)}
-  .masthead p{display:none}
   .note{padding:var(--sp-3) var(--sp-4)}
   .wrap{grid-template-columns:minmax(0,1fr);padding:var(--sp-4);gap:var(--sp-4)}
   .list{max-height:none}
@@ -355,8 +353,7 @@ input{font:inherit}
 <body>
 
 <header class="masthead">
-  <h1>Drive 영상 플레이어</h1>
-  <p>드라이브 폴더를 통째로 불러와 재생합니다</p>
+  <h1>Google Drive Media Player</h1>
 
   <nav class="navtools">
     <details class="menu" id="folderBox">
