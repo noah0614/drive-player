@@ -245,7 +245,17 @@ input{font:inherit}
 .toggle svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 
-.search{position:relative;padding:var(--sp-3) var(--sp-4) var(--sp-1)}
+.search{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-3) var(--sp-4) var(--sp-1)}
+.search__box{position:relative;flex:1;min-width:0;display:block}
+/* 정렬 전환 — 두 가지뿐이라 목록을 여는 대신 눌러서 바꿉니다 */
+.sort{
+  flex:none;height:36px;padding:0 var(--sp-3);
+  border:1px solid var(--line);border-radius:var(--r-pill);
+  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
+  white-space:nowrap;
+  transition:color .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+}
+.sort:hover:not([disabled]){color:var(--text);background:var(--surface-2);border-color:var(--muted)}
 .search input{
   width:100%;height:36px;padding:0 var(--sp-6) 0 var(--sp-3);
   background:var(--bg);color:var(--text);
@@ -259,7 +269,7 @@ input{font:inherit}
 .search input::placeholder{color:#5B5B60}
 .search input::-webkit-search-cancel-button{display:none}
 .search__x{
-  position:absolute;right:var(--sp-5);top:calc(var(--sp-3) + 18px);transform:translateY(-50%);
+  position:absolute;right:var(--sp-2);top:50%;transform:translateY(-50%);
   display:flex;align-items:center;justify-content:center;
   width:20px;height:20px;border-radius:50%;
   color:var(--muted);font-size:var(--fs-xs);
@@ -443,8 +453,11 @@ input{font:inherit}
     </div>
 
     <div class="search">
-      <input id="q" type="search" placeholder="제목 검색" autocomplete="off" spellcheck="false">
-      <button class="search__x" id="qx" type="button" title="검색어 지우기" hidden>✕</button>
+      <span class="search__box">
+        <input id="q" type="search" placeholder="제목 검색" autocomplete="off" spellcheck="false">
+        <button class="search__x" id="qx" type="button" title="검색어 지우기" hidden>✕</button>
+      </span>
+      <button class="sort" id="sort" type="button">이름순</button>
     </div>
 
     <ol class="list" id="list"></ol>
@@ -482,6 +495,9 @@ let tokenClient = null;
 
 /* 검색어. 목록 표시뿐 아니라 이전/다음·셔플이 도는 범위도 이 값으로 좁힙니다. */
 let filter = "";
+
+/* 정렬 기준: "name"(파일명) 또는 "recent"(최근 수정 순) */
+let sortBy = "name";
 
 /* 셔플: 한 바퀴 도는 동안 같은 영상이 다시 나오지 않도록 순서를 미리 섞어 둡니다. */
 let shuffleOn = false;
@@ -521,6 +537,33 @@ function fmtTime(ms) {
   const s = total % 60;
   const pad = (n) => String(n).padStart(2, "0");
   return h ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+}
+
+/* ---------- 정렬 ---------- */
+/* 최신순은 수정 시각 내림차순, 이름순은 한글 기준 오름차순입니다. */
+function sortClips(list) {
+  return list.sort((a, b) =>
+    sortBy === "recent"
+      ? (b.mtime || 0) - (a.mtime || 0)
+      : a.name.localeCompare(b.name, "ko"));
+}
+
+/* 정렬은 CLIPS 배열 자체를 다시 늘어놓기 때문에 인덱스가 전부 바뀝니다.
+   current와 셔플 큐가 인덱스를 들고 있으므로, 재생 중인 영상을 id로 다시 찾아
+   자리를 맞춰 주지 않으면 엉뚱한 영상으로 건너뜁니다. */
+function applySort() {
+  const playingId = CLIPS[current] ? CLIPS[current].id : null;
+  sortClips(CLIPS);
+  current = playingId ? CLIPS.findIndex((c) => c.id === playingId) : -1;
+  queue = []; qpos = -1;                       /* 옛 순서로 만든 큐는 버립니다 */
+  if (shuffleOn && current >= 0) buildQueue(current);
+  render();
+  scrollToCurrent();
+}
+
+function setSortLabel() {
+  $("#sort").textContent = sortBy === "recent" ? "최신순" : "이름순";
+  $("#sort").title = sortBy === "recent" ? "최근 수정 순 — 눌러서 이름순으로" : "이름 순 — 눌러서 최신순으로";
 }
 
 /* ---------- 목록 렌더 ---------- */
@@ -637,6 +680,7 @@ function updateTransport() {
   $("#prev").disabled = none;
   $("#next").disabled = none;
   $("#shuffle").disabled = none;
+  $("#sort").disabled = none;
 }
 
 function play(i, fromQueue) {
@@ -752,7 +796,7 @@ async function listFolder(folderId, depth, out) {
       "(mimeType contains 'video/' or mimeType contains 'audio/' or mimeType = 'application/vnd.google-apps.folder')";
     const url = API
       + "?q=" + encodeURIComponent(q)
-      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,videoMediaMetadata(durationMillis))")
+      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,modifiedTime,videoMediaMetadata(durationMillis))")
       + "&orderBy=name&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true"
       + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
 
@@ -778,7 +822,8 @@ async function listFolder(folderId, depth, out) {
           id: f.id,
           kind: isAudio ? "audio" : "video",
           ms: meta && meta.durationMillis,
-          ready: isAudio || !!(meta && meta.durationMillis)
+          ready: isAudio || !!(meta && meta.durationMillis),
+          mtime: f.modifiedTime ? Date.parse(f.modifiedTime) : 0   /* 최신순 정렬용 */
         });
       }
     }
@@ -806,7 +851,7 @@ $("#load").addEventListener("click", async () => {
   try {
     await getToken(false);
     const found = await listFolder(folderId, 0, []);
-    found.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    sortClips(found);
 
     if (!found.length) {
       say("폴더에서 재생 가능한 미디어 파일을 찾지 못했습니다.", "bad");
@@ -903,6 +948,15 @@ $("#qx").addEventListener("click", () => {
   $("#q").focus();
 });
 
+/* ---------- 정렬 전환 ---------- */
+$("#sort").addEventListener("click", () => {
+  sortBy = sortBy === "recent" ? "name" : "recent";
+  store.set("dp.sort", sortBy);
+  setSortLabel();
+  applySort();
+  say(sortBy === "recent" ? "최근 수정 순으로 정렬했습니다." : "이름 순으로 정렬했습니다.");
+});
+
 /* ---------- 셔플 / 이전 / 다음 ---------- */
 $("#shuffle").addEventListener("click", () => {
   shuffleOn = !shuffleOn;
@@ -945,6 +999,8 @@ shuffleOn = store.get("dp.shuffle", "1") === "1";
 /* 드롭다운은 화면 위에 떠 있으므로 시작할 때는 접어 둡니다.
    폴더를 넣어야 한다는 안내는 재생 화면 가운데에 있습니다. */
 $("#shuffle").setAttribute("aria-pressed", String(shuffleOn));
+sortBy = store.get("dp.sort", "name") === "recent" ? "recent" : "name";
+setSortLabel();
 render();
 updateTransport();
 if (CLIPS.length) {
