@@ -99,7 +99,7 @@ input{font:inherit}
 /* ---------- 헤더 ---------- */
 .masthead{
   display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
-  padding:var(--sp-4) var(--sp-6);
+  padding:var(--sp-3) var(--sp-6);
   border-bottom:1px solid var(--line-soft);
 }
 .masthead h1{
@@ -177,7 +177,7 @@ input{font:inherit}
   display:grid;
   grid-template-columns:minmax(0,1fr) 360px;
   gap:var(--sp-5);
-  padding:var(--sp-5) var(--sp-6) var(--sp-6);
+  padding:var(--sp-3) var(--sp-6) var(--sp-4);
   align-items:start;
   max-width:1600px;margin:0 auto;
 }
@@ -369,7 +369,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
   .wrap{
     flex:1;min-height:0;width:100%;
     /* 홈 인디케이터가 있는 기기를 위한 여유 (해당 없으면 기본값 유지) */
-    padding-bottom:max(var(--sp-5), env(safe-area-inset-bottom, 0px));
+    padding-bottom:max(var(--sp-3), env(safe-area-inset-bottom, 0px));
   }
 
   .stage{display:flex;flex-direction:column;min-height:0;height:100%}
@@ -572,9 +572,18 @@ function parseFolderId(input) {
 }
 
 /* ---------- 표시 도우미 ---------- */
+/* 안내 줄은 오류일 때만 띄운다.
+   "582개를 불러왔습니다" 같은 성공 알림은 한 번 읽고 나면 자리만 차지한다.
+   실패는 남긴다 — 조용히 실패하면 사용자가 원인을 알 방법이 없다.
+   (.note:empty 가 display:none 이라 비우면 높이도 0이 된다) */
 function say(msg, tone) {
+  if (tone !== "bad") {
+    noteEl.textContent = "";
+    noteEl.removeAttribute("data-tone");
+    return;
+  }
   noteEl.textContent = msg || "";
-  if (tone) noteEl.dataset.tone = tone; else noteEl.removeAttribute("data-tone");
+  noteEl.dataset.tone = "bad";
 }
 function fmtTime(ms) {
   const total = Math.round(Number(ms) / 1000);
