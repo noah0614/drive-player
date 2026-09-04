@@ -122,7 +122,8 @@ input{font:inherit}
 .navtools{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
 
 .menu{position:relative}
-.menu > summary{
+.menu > summary,
+.rail-toggle{
   display:inline-flex;align-items:center;gap:var(--sp-1);
   height:36px;padding:0 var(--sp-4);
   list-style:none;cursor:pointer;
@@ -134,7 +135,8 @@ input{font:inherit}
 }
 .menu > summary::-webkit-details-marker{display:none}
 .menu > summary::after{content:"▾";font-size:9px;opacity:.7}
-.menu > summary:hover{color:var(--text);border-color:var(--muted)}
+.menu > summary:hover,
+.rail-toggle:hover{color:var(--text);border-color:var(--muted)}
 .menu[open] > summary{color:var(--accent);border-color:var(--accent)}
 .menu__panel{
   position:absolute;right:0;top:calc(100% + var(--sp-2));z-index:60;
@@ -182,9 +184,14 @@ input{font:inherit}
 
 /* ---------- 재생 화면 ---------- */
 .stage{min-width:0}
+/* 재생 정보 줄 — 화면에서는 감춘다.
+   파일명은 우측 재생목록에 이미 있으므로 이 자리는 중복이고,
+   비우면 그만큼 재생 화면이 세로로 커진다(화면 공간 우선).
+   지우지 않고 감추기만 하는 이유가 둘 있다 —
+   JS(titleEl/markEl/fidEl)가 계속 값을 채워도 안전하고, 화면 낭독기에는 남는다. */
 .slate{
-  display:flex;align-items:center;gap:var(--sp-3);
-  padding:0 var(--sp-1) var(--sp-3);
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
 .slate__mark{
   flex:none;
@@ -224,15 +231,15 @@ input{font:inherit}
 /* 재생목록 접기 — 토글 버튼은 헤더에 둡니다.
    레일을 접으면 레일 안의 컨트롤이 함께 사라지므로, 다시 펼칠 버튼이
    레일 안에 있으면 접는 순간 되돌릴 방법이 없어집니다. */
-.rail-toggle{gap:var(--sp-2)}
+.rail-toggle{cursor:pointer}
 .rail-toggle svg{
-  width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;
+  width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;flex:none;
 }
+/* 상태는 색이 아니라 화살표 방향으로 알린다 — 헤더의 다른 컨트롤과 톤을 맞추기 위해서다 */
 .rail-toggle .chev-close{display:none}
 body[data-rail="off"] .rail-toggle .chev-open{display:none}
 body[data-rail="off"] .rail-toggle .chev-close{display:inline}
-body[data-rail="off"] .rail-toggle{color:var(--muted)}
 body[data-rail="off"] .rail{display:none}
 /* 레일이 빠진 만큼 재생 화면이 가로를 모두 씁니다 */
 body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
@@ -409,7 +416,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
   <span class="build">마지막 빌드: <time datetime="2026-09-04">2026-09-04</time></span>
 
   <nav class="navtools">
-    <button class="btn btn--sm rail-toggle" id="railBtn" type="button"
+    <button class="rail-toggle" id="railBtn" type="button"
             aria-expanded="true" aria-controls="rail" title="재생목록 접기 / 펼치기">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M4 6h10"/><path d="M4 12h10"/><path d="M4 18h10"/>
