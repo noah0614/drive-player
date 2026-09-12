@@ -418,7 +418,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-12T14:15">2026-09-12 14:15</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-12T14:29">2026-09-12 14:29</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -857,25 +857,15 @@ async function play(i, fromQueue) {
   el.title = clip.name;
   /* 재생이 끝나면 다음 곡으로 — iframe 미리보기로는 재생 종료를 알 수 없어 못 하던 것이다. */
   el.addEventListener("ended", () => step(1));
-  /* 실패 원인은 둘 중 하나다 — 토큰이 만료됐거나(재시도로 해결), 브라우저가 이 코덱
-     (HEVC 등)을 못 열거나(재시도해도 안 됨, 다운로드 링크만 남긴다).
-     한 번은 자동으로 새 토큰을 서비스워커에 넘기고 다시 로드해보고, 그래도 안 되면 포기한다. */
-  let retried = false;
-  el.addEventListener("error", async () => {
+  /* 바로 위 프리플라이트에서 이미 인증·서비스워커·Drive 응답까지 다 확인했다 — 그런데도
+     video 태그가 에러를 내면 남는 원인은 사실상 하나, 브라우저가 이 코덱(HEVC 등)을
+     디코딩하지 못하는 것이다. (예전엔 여기서 토큰을 지우고 다시 로그인을 띄웠는데,
+     코덱 문제에는 로그인이 아무 도움이 안 되고 곡을 넘길 때마다 로그인 창만 반복해서
+     떴다 — 인증은 이미 확인됐으니 다시 확인하지 않는다.) */
+  el.addEventListener("error", () => {
     if (current !== i) return;   // 이미 다른 곡으로 넘어간 뒤라면 무시
-    if (!retried) {
-      retried = true;
-      token = null;
-      try {
-        const fresh = await getToken(true);
-        if (current !== i) return;
-        postTokenToSW(fresh);
-        el.load();   // src는 그대로지만 서비스워커가 새 토큰으로 다시 요청하게 만든다
-        return;
-      } catch {}
-    }
-    showError(clip, "재생에 실패했습니다 — 브라우저가 이 영상의 코덱을 지원하지 않거나 연결이 만료됐을 수 있습니다. 원본을 내려받아 VLC 등으로 재생해 보세요.", streamUrl(clip));
-    say("‘" + clip.name + "’ 재생 실패.", "bad");
+    showError(clip, "브라우저가 이 영상의 코덱을 지원하지 않습니다. 원본을 내려받아 VLC 등으로 재생해 보세요.", streamUrl(clip));
+    say("‘" + clip.name + "’ 코덱을 브라우저가 지원하지 않습니다.", "bad");
   });
   frameEl.appendChild(el);
 }
