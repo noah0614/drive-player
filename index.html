@@ -225,25 +225,6 @@ input{font:inherit}
 .empty strong{font-size:var(--fs-lg);font-weight:600}
 .empty span{color:var(--muted);font-size:var(--fs-md);max-width:44ch}
 
-/* 원본 파일을 통째로 내려받는 동안 보여주는 진행률 표시.
-   수백 MB짜리 파일도 있어 몇 초~몇십 초 걸릴 수 있으므로 빈 화면 대신 진행 상황을 보여준다. */
-.loading{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:var(--sp-3);text-align:center;padding:var(--sp-6);
-  background:var(--surface);
-}
-.loading strong{font-size:var(--fs-lg);font-weight:600}
-.loading span{color:var(--muted);font-size:var(--fs-md)}
-.loading__bar{
-  width:min(280px, 60%);height:6px;border-radius:var(--r-pill);
-  background:var(--surface-2);overflow:hidden;
-}
-.loading__fill{
-  height:100%;width:0%;background:var(--accent);
-  transition:width .12s linear;
-}
-
 /* ---------- 재생목록 ---------- */
 .rail{
   background:var(--surface);
@@ -565,13 +546,6 @@ let current = -1;
 let token = null;         // { value, expires }
 let tokenClient = null;
 
-/* 원본 화질 스트리밍 상태.
-   dlController: 진행 중인 다운로드를 취소하기 위한 핸들 — 빠르게 다음 곡으로 넘기면
-   이전 다운로드가 배경에서 계속 도는 낭비를 막는다.
-   objectUrl: 만들어 둔 blob: URL — video가 다 쓰면 반드시 revoke해야 메모리가 안 쌓인다. */
-let dlController = null;
-let objectUrl = null;
-
 /* 검색어. 목록 표시뿐 아니라 이전/다음·셔플이 도는 범위도 이 값으로 좁힙니다. */
 let filter = "";
 
@@ -772,80 +746,19 @@ function updateTransport() {
   $("#sort").disabled = none;
 }
 
-/* 사람이 읽는 용량 표기 — 진행률 줄에 "120MB / 350MB" 식으로 보여주기 위해서다. */
-function fmtBytes(n) {
-  if (!n) return "";
-  const mb = n / (1024 * 1024);
-  return mb >= 1024 ? (mb / 1024).toFixed(2) + "GB" : mb.toFixed(0) + "MB";
+/* 원본 화질 스트리밍용 URL.
+   video/audio 태그는 커스텀 헤더(Authorization)를 실을 방법이 없어서 Drive API를
+   fetch로 감쌀 수밖에 없는데, fetch로 전체를 받아 blob:으로 재생하면 iPad·iPhone처럼
+   메모리가 빠듯한 기기에서 큰 파일(수백 MB)에 크래시가 난다.
+   대신 OAuth 액세스 토큰을 쿼리스트링(access_token)에 실어 이 URL을 그대로 src에 물리면,
+   브라우저 자체 비디오 엔진이 Range 요청을 날리며 진짜 스트리밍·탐색을 한다 — 메모리에
+   파일 전체를 올리지 않는다. (Google API가 헤더 대신 지원하는 OAuth 2.0 쿼리 파라미터
+   방식, RFC 6750 §2.3. 토큰은 1시간 안팎이면 만료되므로 곡을 바꿀 때마다 새로 받는다.) */
+function streamUrl(clip, tok) {
+  return API + "/" + encodeURIComponent(clip.id) + "?alt=media&access_token=" + encodeURIComponent(tok);
 }
 
-function releaseObjectUrl() {
-  if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
-}
-
-/* Drive API로 원본 바이트를 직접 받는다 (alt=media).
-   iframe 미리보기는 Drive가 항상 낮은 화질로 다시 인코딩해서 내려주지만,
-   이 경로는 트랜스코딩을 거치지 않은 원본 파일 그대로를 돌려준다.
-   진행률을 보여주기 위해 스트림을 손수 읽어 청크로 모은다 — 전체를 받아야
-   video의 src로 쓸 blob: URL을 만들 수 있어서, 재생은 다운로드가 끝난 뒤 시작된다. */
-async function fetchOriginal(clip, tok, onProgress, signal) {
-  const url = API + "/" + encodeURIComponent(clip.id) + "?alt=media";
-  const res = await fetch(url, { headers: { Authorization: "Bearer " + tok }, signal });
-  if (res.status === 401) throw new Error("UNAUTHORIZED");
-  if (!res.ok) {
-    let detail = "";
-    try { const e = await res.json(); detail = e.error && e.error.message ? e.error.message : ""; } catch {}
-    throw new Error("API_" + res.status + (detail ? ": " + detail : ""));
-  }
-  const total = Number(res.headers.get("Content-Length")) || 0;
-  const reader = res.body.getReader();
-  const chunks = [];
-  let received = 0;
-  let lastTick = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    received += value.length;
-    const now = performance.now();
-    if (onProgress && (now - lastTick > 100)) { lastTick = now; onProgress(received, total); }
-  }
-  if (onProgress) onProgress(received, total);
-  return new Blob(chunks, { type: clip.kind === "audio" ? "audio/mp4" : "video/mp4" });
-}
-
-function renderLoading(clip) {
-  frameEl.innerHTML = "";
-  const box = document.createElement("div");
-  box.className = "loading";
-  const s = document.createElement("strong");
-  s.textContent = "원본을 불러오는 중…";
-  const p = document.createElement("span");
-  p.id = "loadPct";
-  p.textContent = clip.name;
-  const bar = document.createElement("div");
-  bar.className = "loading__bar";
-  const fill = document.createElement("div");
-  fill.className = "loading__fill";
-  fill.id = "loadFill";
-  bar.appendChild(fill);
-  box.appendChild(s); box.appendChild(bar); box.appendChild(p);
-  frameEl.appendChild(box);
-}
-
-function updateLoading(received, total) {
-  const fill = document.getElementById("loadFill");
-  const pct = document.getElementById("loadPct");
-  if (!fill || !pct) return;
-  if (total) {
-    fill.style.width = Math.min(100, (received / total) * 100) + "%";
-    pct.textContent = fmtBytes(received) + " / " + fmtBytes(total);
-  } else {
-    pct.textContent = fmtBytes(received) + " 받음";
-  }
-}
-
-function showError(clip, msg, downloadUrl) {
+function showError(clip, msg, retryUrl) {
   frameEl.innerHTML = "";
   const box = document.createElement("div");
   box.className = "empty";
@@ -854,12 +767,10 @@ function showError(clip, msg, downloadUrl) {
   const p = document.createElement("span");
   p.textContent = msg;
   box.appendChild(s); box.appendChild(p);
-  /* 코덱 문제로 브라우저가 못 여는 것뿐, 파일 자체는 이미 다 받아 놨다 —
-     내려받아 VLC 등으로 볼 수 있게 링크를 남긴다. */
-  if (downloadUrl) {
+  if (retryUrl) {
     const a = document.createElement("a");
     a.className = "btn btn--sm";
-    a.href = downloadUrl;
+    a.href = retryUrl;
     a.download = clip.name;
     a.textContent = "원본 파일 내려받기";
     box.appendChild(a);
@@ -879,56 +790,44 @@ async function play(i, fromQueue) {
   render();
   scrollToCurrent();
 
-  /* 이전 다운로드가 아직 돌고 있으면 취소하고, 다 쓴 blob URL은 바로 반환한다. */
-  if (dlController) dlController.abort();
-  releaseObjectUrl();
-  const myController = new AbortController();
-  dlController = myController;
-
-  renderLoading(clip);
-
-  const attempt = async (interactive) => {
-    const tok = await getToken(interactive);
-    return fetchOriginal(clip, tok, (rcv, total) => updateLoading(rcv, total), myController.signal);
-  };
-
-  let blob;
+  let tok;
   try {
-    try {
-      blob = await attempt(false);
-    } catch (err) {
-      if (String(err.message) === "UNAUTHORIZED") {
-        token = null;
-        blob = await attempt(true);   // 스코프가 넓어졌으니 재동의가 필요할 수 있다
-      } else {
-        throw err;
-      }
-    }
+    tok = await getToken(false);
   } catch (err) {
-    if (myController.signal.aborted) return;   // 다음 곡으로 넘어가느라 취소된 것 — 조용히 무시
-    const msg = String(err.message || err);
-    showError(clip, "불러오기 실패 — " + msg);
-    say("‘" + clip.name + "’ 재생 실패 — " + msg, "bad");
+    if (current !== i) return;
+    showError(clip, "Google 로그인이 필요합니다 — 위에서 ‘연결’을 눌러 주세요.");
     return;
   }
-  if (myController.signal.aborted) return;   // 받는 도중 다른 곡으로 넘어갔다
+  if (current !== i) return;   // 토큰을 기다리는 동안 다른 곡으로 넘어갔다
 
-  objectUrl = URL.createObjectURL(blob);
+  let currentTok = tok;   // 재시도로 토큰을 갈아 끼울 때마다 최신 값을 들고 있는다
   frameEl.innerHTML = "";
   const el = document.createElement(clip.kind === "audio" ? "audio" : "video");
-  el.src = objectUrl;
+  el.src = streamUrl(clip, currentTok);
   el.controls = true;
   el.autoplay = true;
   el.playsInline = true;
   el.title = clip.name;
   /* 재생이 끝나면 다음 곡으로 — iframe 미리보기로는 재생 종료를 알 수 없어 못 하던 것이다. */
   el.addEventListener("ended", () => step(1));
-  /* 파일은 이미 다 받았는데 브라우저가 이 코덱(HEVC 등)을 못 열 때 — 재생만 실패한다.
-     원본 자체는 objectUrl에 이미 들어 있으니 지우지 말고 내려받기로라도 쓰게 한다. */
-  el.addEventListener("error", () => {
+  /* 실패 원인은 둘 중 하나다 — 토큰이 만료됐거나(재시도로 해결), 브라우저가 이 코덱
+     (HEVC 등)을 못 열거나(재시도해도 안 됨, 다운로드 링크만 남긴다).
+     한 번은 자동으로 새 토큰을 받아 재시도하고, 그래도 안 되면 포기한다. */
+  let retried = false;
+  el.addEventListener("error", async () => {
     if (current !== i) return;   // 이미 다른 곡으로 넘어간 뒤라면 무시
-    showError(clip, "브라우저가 이 영상의 코덱을 재생하지 못합니다. 원본을 내려받아 VLC 등으로 재생해 보세요.", objectUrl);
-    say("‘" + clip.name + "’ 코덱을 브라우저가 지원하지 않습니다.", "bad");
+    if (!retried) {
+      retried = true;
+      token = null;
+      try {
+        currentTok = await getToken(true);
+        if (current !== i) return;
+        el.src = streamUrl(clip, currentTok);
+        return;
+      } catch {}
+    }
+    showError(clip, "재생에 실패했습니다 — 브라우저가 이 영상의 코덱을 지원하지 않거나 연결이 만료됐을 수 있습니다. 원본을 내려받아 VLC 등으로 재생해 보세요.", streamUrl(clip, currentTok));
+    say("‘" + clip.name + "’ 재생 실패.", "bad");
   });
   frameEl.appendChild(el);
 }
@@ -950,8 +849,6 @@ function scrollToCurrent() {
 
 function showEmpty(strong, detail) {
   current = -1;
-  if (dlController) { dlController.abort(); dlController = null; }
-  releaseObjectUrl();
   frameEl.innerHTML = "";
   const box = document.createElement("div");
   box.className = "empty";
