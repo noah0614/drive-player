@@ -108,7 +108,8 @@ input{font:inherit}
 }
 .logo{width:21px;height:21px;flex:none}
 
-/* 마지막 빌드 — 배포할 때마다 <time>의 datetime 속성과 표시 텍스트를 함께 고칩니다 */
+/* 마지막 빌드 — 캐시 때문에 실제로 최신 배포를 보고 있는지 헷갈릴 때가 있어서
+   분 단위까지 찍는다. 배포할 때마다 <time>의 datetime 속성과 표시 텍스트를 함께 고친다. */
 .build{
   font-size:var(--fs-sm);color:var(--muted);
   white-space:nowrap;letter-spacing:-.005em;
@@ -417,7 +418,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-12">2026-09-12</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-12T14:15">2026-09-12 14:15</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -826,6 +827,26 @@ async function play(i, fromQueue) {
   }
   if (current !== i) return;   // 토큰/서비스워커를 기다리는 동안 다른 곡으로 넘어갔다
   postTokenToSW(tok);
+
+  /* 바로 <video>에 물리면 실패해도 "코덱 문제"인지 "인증 실패"인지 구분이 안 된다.
+     1바이트만 미리 요청해서 서비스워커·Drive API가 실제로 뭐라고 답하는지 먼저 확인한다
+     — 문제가 있으면 Google이 준 실제 오류 메시지를 그대로 보여준다. */
+  let probeStatus = 0, probeBody = "";
+  try {
+    const probe = await fetch(streamUrl(clip), { headers: { Range: "bytes=0-0" } });
+    probeStatus = probe.status;
+    if (probeStatus < 200 || probeStatus >= 300) probeBody = await probe.text();
+  } catch (err) {
+    if (current !== i) return;
+    showError(clip, "스트리밍 요청 자체가 실패했습니다 (네트워크 또는 서비스워커 오류): " + (err.message || err));
+    return;
+  }
+  if (current !== i) return;   // 확인하는 동안 다른 곡으로 넘어갔다
+  if (probeStatus < 200 || probeStatus >= 300) {
+    showError(clip, "Drive가 재생을 거부했습니다 (HTTP " + probeStatus + ") — " + (probeBody || "(응답 없음)").slice(0, 300));
+    say("‘" + clip.name + "’ 재생 실패 (HTTP " + probeStatus + ").", "bad");
+    return;
+  }
 
   frameEl.innerHTML = "";
   const el = document.createElement(clip.kind === "audio" ? "audio" : "video");
