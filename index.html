@@ -212,11 +212,7 @@ input{font:inherit}
   border:1px solid var(--line-soft);border-radius:var(--r-lg);
   overflow:hidden;
 }
-/* 원본 화질 재생 — Drive 미리보기(iframe)는 항상 360p 안팎으로 다시 인코딩해서 내려주므로,
-   OAuth 토큰으로 원본 바이트를 직접 받아 이 video 태그에 물린다.
-   object-fit:contain 인 이유는 영상 비율이 프레임과 다를 때 잘리지 않고 레터박스로 보이게 하기 위해서다. */
-.frame video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
-.frame audio{width:100%;margin:auto;display:block}
+.frame iframe{width:100%;height:100%;border:0;display:block}
 .empty{
   position:absolute;inset:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -418,7 +414,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-12T14:40">2026-09-12 14:40</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-12T21:04">2026-09-12 21:04</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -530,10 +526,7 @@ let CLIPS = [
   // { name: "예시 영상", id: "1AbCdEfGhIjKlMnOpQrStUvWxYz" },
 ];
 
-/* metadata.readonly로는 폴더 목록만 읽힌다 — 원본 파일 바이트를 내려받으려면
-   (alt=media) drive.readonly 스코프가 필요하다. 스코프를 넓혔으니 기존 연결은
-   재동의가 필요하다(설정에서 '연결'을 다시 누르면 됨). */
-const SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+const SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly";
 const API   = "https://www.googleapis.com/drive/v3/files";
 const MAX_DEPTH = 3;
 
@@ -747,129 +740,24 @@ function updateTransport() {
   $("#sort").disabled = none;
 }
 
-/* 원본 화질 스트리밍.
-   video/audio 태그는 커스텀 헤더(Authorization)를 실을 방법이 없다. Drive API로
-   원본 바이트를 받으려면 이 헤더가 필수라서(쿼리스트링의 access_token은 Drive API가
-   더 이상 받아주지 않는다 — 시도해봤더니 아예 재생이 안 됐다), 같은 출처의
-   서비스워커(sw.js)가 "stream/<fileId>" 요청을 가로채 헤더를 붙여 대신 요청하고
-   그 응답(Range 지원 포함)을 그대로 돌려준다. 그러면 브라우저의 video 엔진이 평소처럼
-   Range 요청을 날리며 진짜 스트리밍·탐색을 한다 — 페이지 JS가 파일 전체를 메모리에
-   들고 있지 않아도 되니 iPad·iPhone처럼 메모리가 빠듯한 기기에서도 안전하다. */
-let swReadyPromise = null;
-function ensureSW() {
-  if (!("serviceWorker" in navigator)) return Promise.reject(new Error("NO_SW"));
-  if (swReadyPromise) return swReadyPromise;
-  swReadyPromise = navigator.serviceWorker.register("sw.js")
-    .then(() => navigator.serviceWorker.ready)
-    .then(() => {
-      if (navigator.serviceWorker.controller) return;
-      /* 이 페이지의 첫 로드 — 서비스워커가 설치는 됐지만 아직 이 탭을 제어하지
-         않는다. activate에서 clients.claim()을 부르므로 곧 controllerchange가 온다. */
-      return new Promise((resolve) => {
-        navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
-      });
-    });
-  return swReadyPromise;
-}
-function postTokenToSW(tok) {
-  if (navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({ type: "token", value: tok });
-  }
-}
-function streamUrl(clip) {
-  /* size를 같이 넘기는 이유는 sw.js 쪽 주석 참고 — 서비스워커가 Content-Range를
-     직접 계산해서 넣어야 하는데 총 파일 크기를 알아야 한다. */
-  return "stream/" + encodeURIComponent(clip.id) + "?size=" + (clip.size || 0);
-}
-
-function showError(clip, msg, retryUrl) {
-  frameEl.innerHTML = "";
-  const box = document.createElement("div");
-  box.className = "empty";
-  const s = document.createElement("strong");
-  s.textContent = "재생할 수 없습니다";
-  const p = document.createElement("span");
-  p.textContent = msg;
-  box.appendChild(s); box.appendChild(p);
-  if (retryUrl) {
-    const a = document.createElement("a");
-    a.className = "btn btn--sm";
-    a.href = retryUrl;
-    a.download = clip.name;
-    a.textContent = "원본 파일 내려받기";
-    box.appendChild(a);
-  }
-  frameEl.appendChild(box);
-}
-
-async function play(i, fromQueue) {
+function play(i, fromQueue) {
   const clip = CLIPS[i];
   if (!clip) return;
   /* 목록에서 직접 고르면 그 영상을 기준으로 순서를 다시 섞습니다. */
   if (shuffleOn && !fromQueue) buildQueue(i);
   current = i;
+  frameEl.innerHTML = "";
+  const f = document.createElement("iframe");
+  f.src = "https://drive.google.com/file/d/" + clip.id + "/preview";
+  f.allow = "autoplay; fullscreen; encrypted-media";
+  f.allowFullscreen = true;
+  f.title = clip.name;
+  frameEl.appendChild(f);
   titleEl.textContent = clip.name;
   markEl.textContent = String(i + 1).padStart(2, "0");
   fidEl.textContent = clip.id;
   render();
   scrollToCurrent();
-
-  let tok;
-  try {
-    tok = await getToken(false);
-    await ensureSW();
-  } catch (err) {
-    if (current !== i) return;
-    if (String(err.message) === "NO_SW") {
-      showError(clip, "이 브라우저는 스트리밍에 필요한 기능(Service Worker)을 지원하지 않습니다.");
-    } else {
-      showError(clip, "Google 로그인이 필요합니다 — 위에서 ‘연결’을 눌러 주세요.");
-    }
-    return;
-  }
-  if (current !== i) return;   // 토큰/서비스워커를 기다리는 동안 다른 곡으로 넘어갔다
-  postTokenToSW(tok);
-
-  /* 바로 <video>에 물리면 실패해도 "코덱 문제"인지 "인증 실패"인지 구분이 안 된다.
-     1바이트만 미리 요청해서 서비스워커·Drive API가 실제로 뭐라고 답하는지 먼저 확인한다
-     — 문제가 있으면 Google이 준 실제 오류 메시지를 그대로 보여준다. */
-  let probeStatus = 0, probeBody = "";
-  try {
-    const probe = await fetch(streamUrl(clip), { headers: { Range: "bytes=0-0" } });
-    probeStatus = probe.status;
-    if (probeStatus < 200 || probeStatus >= 300) probeBody = await probe.text();
-  } catch (err) {
-    if (current !== i) return;
-    showError(clip, "스트리밍 요청 자체가 실패했습니다 (네트워크 또는 서비스워커 오류): " + (err.message || err));
-    return;
-  }
-  if (current !== i) return;   // 확인하는 동안 다른 곡으로 넘어갔다
-  if (probeStatus < 200 || probeStatus >= 300) {
-    showError(clip, "Drive가 재생을 거부했습니다 (HTTP " + probeStatus + ") — " + (probeBody || "(응답 없음)").slice(0, 300));
-    say("‘" + clip.name + "’ 재생 실패 (HTTP " + probeStatus + ").", "bad");
-    return;
-  }
-
-  frameEl.innerHTML = "";
-  const el = document.createElement(clip.kind === "audio" ? "audio" : "video");
-  el.src = streamUrl(clip);
-  el.controls = true;
-  el.autoplay = true;
-  el.playsInline = true;
-  el.title = clip.name;
-  /* 재생이 끝나면 다음 곡으로 — iframe 미리보기로는 재생 종료를 알 수 없어 못 하던 것이다. */
-  el.addEventListener("ended", () => step(1));
-  /* 바로 위 프리플라이트에서 이미 인증·서비스워커·Drive 응답까지 다 확인했다 — 그런데도
-     video 태그가 에러를 내면 남는 원인은 사실상 하나, 브라우저가 이 코덱(HEVC 등)을
-     디코딩하지 못하는 것이다. (예전엔 여기서 토큰을 지우고 다시 로그인을 띄웠는데,
-     코덱 문제에는 로그인이 아무 도움이 안 되고 곡을 넘길 때마다 로그인 창만 반복해서
-     떴다 — 인증은 이미 확인됐으니 다시 확인하지 않는다.) */
-  el.addEventListener("error", () => {
-    if (current !== i) return;   // 이미 다른 곡으로 넘어간 뒤라면 무시
-    showError(clip, "브라우저가 이 영상의 코덱을 지원하지 않습니다. 원본을 내려받아 VLC 등으로 재생해 보세요.", streamUrl(clip));
-    say("‘" + clip.name + "’ 코덱을 브라우저가 지원하지 않습니다.", "bad");
-  });
-  frameEl.appendChild(el);
 }
 
 /* 랜덤 재생은 목록 어디로든 튀므로, 지금 재생 중인 항목을 목록 한가운데로 데려옵니다.
@@ -965,7 +853,7 @@ async function listFolder(folderId, depth, out) {
       "(mimeType contains 'video/' or mimeType contains 'audio/' or mimeType = 'application/vnd.google-apps.folder')";
     const url = API
       + "?q=" + encodeURIComponent(q)
-      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,modifiedTime,size,videoMediaMetadata(durationMillis))")
+      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,modifiedTime,videoMediaMetadata(durationMillis))")
       + "&orderBy=name&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true"
       + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
 
@@ -992,8 +880,7 @@ async function listFolder(folderId, depth, out) {
           kind: isAudio ? "audio" : "video",
           ms: meta && meta.durationMillis,
           ready: isAudio || !!(meta && meta.durationMillis),
-          mtime: f.modifiedTime ? Date.parse(f.modifiedTime) : 0,   /* 최신순 정렬용 */
-          size: Number(f.size) || 0   /* 스트리밍용 — sw.js가 Content-Range를 직접 만들 때 총 크기가 필요하다 */
+          mtime: f.modifiedTime ? Date.parse(f.modifiedTime) : 0   /* 최신순 정렬용 */
         });
       }
     }
