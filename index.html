@@ -418,7 +418,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-12T14:29">2026-09-12 14:29</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-12T14:40">2026-09-12 14:40</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -777,7 +777,9 @@ function postTokenToSW(tok) {
   }
 }
 function streamUrl(clip) {
-  return "stream/" + encodeURIComponent(clip.id);
+  /* size를 같이 넘기는 이유는 sw.js 쪽 주석 참고 — 서비스워커가 Content-Range를
+     직접 계산해서 넣어야 하는데 총 파일 크기를 알아야 한다. */
+  return "stream/" + encodeURIComponent(clip.id) + "?size=" + (clip.size || 0);
 }
 
 function showError(clip, msg, retryUrl) {
@@ -963,7 +965,7 @@ async function listFolder(folderId, depth, out) {
       "(mimeType contains 'video/' or mimeType contains 'audio/' or mimeType = 'application/vnd.google-apps.folder')";
     const url = API
       + "?q=" + encodeURIComponent(q)
-      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,modifiedTime,videoMediaMetadata(durationMillis))")
+      + "&fields=" + encodeURIComponent("nextPageToken,files(id,name,mimeType,modifiedTime,size,videoMediaMetadata(durationMillis))")
       + "&orderBy=name&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true"
       + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
 
@@ -990,7 +992,8 @@ async function listFolder(folderId, depth, out) {
           kind: isAudio ? "audio" : "video",
           ms: meta && meta.durationMillis,
           ready: isAudio || !!(meta && meta.durationMillis),
-          mtime: f.modifiedTime ? Date.parse(f.modifiedTime) : 0   /* 최신순 정렬용 */
+          mtime: f.modifiedTime ? Date.parse(f.modifiedTime) : 0,   /* 최신순 정렬용 */
+          size: Number(f.size) || 0   /* 스트리밍용 — sw.js가 Content-Range를 직접 만들 때 총 크기가 필요하다 */
         });
       }
     }
