@@ -418,7 +418,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-13T01:21">2026-09-13 01:21</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-18T17:15">2026-09-18 17:15</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -434,6 +434,9 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     <details class="menu" id="folderBox">
       <summary>드라이브 폴더</summary>
       <div class="menu__panel">
+        <label class="label">빠른 폴더</label>
+        <div class="row" id="quickFolders"></div>
+
         <label class="label" for="folder">폴더 주소</label>
         <input class="field" id="folder" type="text"
                placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
@@ -525,6 +528,17 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 const DEFAULT_CLIENT_ID = "526977864557-3rhh9763r87hmi7bcb1f60v88668i3ks.apps.googleusercontent.com";
 const DEFAULT_FOLDER    = "";
 
+/* Kevin 라이브러리 루트와 East/West/China 하위 폴더 — 2026-09-18 고정.
+   폴더 주소 입력 없이도 바로 접근할 수 있도록 ID를 기억해 둔다(사용자 요청).
+   ID는 Drive에서 폴더를 옮기거나 지우지 않는 한 바뀌지 않는다. */
+const KEVIN_ROOT_ID = "1Y5HxbzYS8Fa-AM-5UIZ4-bwp0IOdM_WA";
+const QUICK_FOLDERS = [
+  { name: "East",  id: "11Akt4yA8Y2yp-kLif2LVIO0clk2uCmae" },
+  { name: "West",  id: "1YUHOzOz4tHURAZgkmUDH7xCsWtuqVQ68" },
+  { name: "China", id: "1-GeUUgOUW18QKg1SLHGrBsUVzRp9107h" },
+];
+function driveFolderUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
+
 /* 폴더 없이 고정 목록을 쓰고 싶을 때만 채우세요. */
 let CLIPS = [
   // { name: "예시 영상", id: "1AbCdEfGhIjKlMnOpQrStUvWxYz" },
@@ -566,7 +580,7 @@ const store = {
 };
 let clientId = DEFAULT_CLIENT_ID || store.get("dp.clientId", "");
 $("#cid").value = clientId;
-$("#folder").value = DEFAULT_FOLDER || store.get("dp.folderId", "");
+$("#folder").value = DEFAULT_FOLDER || store.get("dp.folderId", "") || driveFolderUrl(KEVIN_ROOT_ID);
 if (!clientId) $("#setupBox").open = true;
 
 /* ---------- 링크 파싱 ---------- */
@@ -1002,20 +1016,18 @@ async function listFolder(folderId, depth, out) {
   return out;
 }
 
-$("#load").addEventListener("click", async () => {
-  const folderId = parseFolderId($("#folder").value);
-  if (!folderId) {
-    say("폴더 링크에서 ID를 찾지 못했습니다. 폴더 주소 전체를 붙여넣어 주세요.", "bad");
-    return;
-  }
+/* 폴더 ID 하나를 실제로 읽어 재생목록에 채우는 공통 로직 — 기존 '폴더 불러오기'
+   버튼과 East/West/China 빠른 폴더 버튼이 함께 쓴다(2026-09-18 리팩터).
+   addressToRemember는 다음 방문 때 '폴더 주소' 칸에 복원할 값(=dp.folderId). */
+async function runLoad(folderId, addressToRemember) {
   if (!clientId) {
     $("#setupBox").open = true;
     say("먼저 OAuth 클라이언트 ID를 저장하세요.", "bad");
     return;
   }
 
-  const btn = $("#load");
-  btn.disabled = true;
+  const buttons = [$("#load"), ...quickBtns];
+  buttons.forEach((b) => { b.disabled = true; });
   say("폴더를 읽는 중…");
 
   try {
@@ -1025,12 +1037,12 @@ $("#load").addEventListener("click", async () => {
 
     if (!found.length) {
       say("폴더에서 재생 가능한 미디어 파일을 찾지 못했습니다.", "bad");
-      btn.disabled = false;
       return;
     }
 
     CLIPS = found;
-    store.set("dp.folderId", $("#folder").value.trim());
+    $("#folder").value = addressToRemember;
+    store.set("dp.folderId", addressToRemember);
     $("#folderBox").open = false;   /* 다 불러왔으면 접어서 목록에 자리를 내줍니다 */
     render();
     updateTransport();
@@ -1066,8 +1078,29 @@ $("#load").addEventListener("click", async () => {
       say("불러오기 실패 — " + msg, "bad");
     }
   } finally {
-    btn.disabled = false;
+    buttons.forEach((b) => { b.disabled = false; });
   }
+}
+
+/* East/West/China 빠른 폴더 버튼 — '드라이브 폴더' 패널에 순서대로 렌더링.
+   ID를 이미 알고 있어 '폴더 불러오기'를 먼저 누를 필요 없이 바로 해당 폴더만 불러온다. */
+const quickBtns = QUICK_FOLDERS.map((qf) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "btn btn--sm";
+  b.textContent = qf.name;
+  b.addEventListener("click", () => runLoad(qf.id, driveFolderUrl(qf.id)));
+  $("#quickFolders").appendChild(b);
+  return b;
+});
+
+$("#load").addEventListener("click", () => {
+  const folderId = parseFolderId($("#folder").value);
+  if (!folderId) {
+    say("폴더 링크에서 ID를 찾지 못했습니다. 폴더 주소 전체를 붙여넣어 주세요.", "bad");
+    return;
+  }
+  runLoad(folderId, $("#folder").value.trim());
 });
 
 $("#clear").addEventListener("click", () => {
