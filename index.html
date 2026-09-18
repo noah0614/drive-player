@@ -96,6 +96,17 @@ input{font:inherit}
 .hint strong{color:var(--text);font-weight:600}
 .row{display:flex;gap:var(--sp-2)}
 
+/* 폴더 패널 속 '고급' — 직접 링크 붙여넣기는 자주 안 써서 기본은 접어 둔다 */
+.adv > summary{
+  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
+  cursor:pointer;list-style:none;
+}
+.adv > summary::-webkit-details-marker{display:none}
+.adv > summary::before{content:"▸ ";font-size:9px}
+.adv[open] > summary::before{content:"▾ "}
+.adv > summary:hover{color:var(--text)}
+.adv__body{display:grid;gap:var(--sp-3);margin-top:var(--sp-3)}
+
 /* ---------- 헤더 ---------- */
 .masthead{
   display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
@@ -418,7 +429,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-18T17:15">2026-09-18 17:15</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-18T17:27">2026-09-18 17:27</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -437,13 +448,17 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
         <label class="label">빠른 폴더</label>
         <div class="row" id="quickFolders"></div>
 
-        <label class="label" for="folder">폴더 주소</label>
-        <input class="field" id="folder" type="text"
-               placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
-        <div class="row">
-          <button class="btn btn--go" id="load">폴더 불러오기</button>
-          <button class="btn" id="clear">비우기</button>
-        </div>
+        <details class="adv">
+          <summary>고급</summary>
+          <div class="adv__body">
+            <label class="label" for="folder">폴더 주소</label>
+            <input class="field" id="folder" type="text"
+                   placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+            <button class="btn btn--go" id="load">폴더 불러오기</button>
+          </div>
+        </details>
+
+        <button class="btn" id="clear">비우기</button>
       </div>
     </details>
 
@@ -528,7 +543,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 const DEFAULT_CLIENT_ID = "526977864557-3rhh9763r87hmi7bcb1f60v88668i3ks.apps.googleusercontent.com";
 const DEFAULT_FOLDER    = "";
 
-/* Kevin 라이브러리 루트와 East/West/China 하위 폴더 — 2026-09-18 고정.
+/* Kevin 라이브러리 루트와 East/West/China/Classic 하위 폴더 — 2026-09-18 고정.
    폴더 주소 입력 없이도 바로 접근할 수 있도록 ID를 기억해 둔다(사용자 요청).
    ID는 Drive에서 폴더를 옮기거나 지우지 않는 한 바뀌지 않는다. */
 const KEVIN_ROOT_ID = "1Y5HxbzYS8Fa-AM-5UIZ4-bwp0IOdM_WA";
@@ -536,6 +551,7 @@ const QUICK_FOLDERS = [
   { name: "East",  id: "11Akt4yA8Y2yp-kLif2LVIO0clk2uCmae" },
   { name: "West",  id: "1YUHOzOz4tHURAZgkmUDH7xCsWtuqVQ68" },
   { name: "China", id: "1-GeUUgOUW18QKg1SLHGrBsUVzRp9107h" },
+  { name: "Classic", id: "1vRdWOqwo9vDrfw_0rCBLZaNisiaVj_at" },
 ];
 function driveFolderUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
 
