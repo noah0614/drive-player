@@ -306,6 +306,18 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
   transition:color .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
 }
 .sort:hover:not([disabled]){color:var(--text);background:var(--surface-2);border-color:var(--muted)}
+
+/* 빠른 폴더 드롭다운 — 하위 폴더가 여러 개인 라이브러리(바람의 검심 등)는
+   버튼 대신 이걸로 고른다. 옆의 빠른 폴더 버튼(.btn.btn--sm)과 높이·글자 크기를 맞춘다. */
+.qselect{
+  height:28px;padding:0 var(--sp-3);
+  background:var(--surface-2);color:var(--muted);
+  border:1px solid var(--line);border-radius:var(--r-pill);
+  font:inherit;font-size:var(--fs-sm);font-weight:600;
+  cursor:pointer;
+  transition:color .18s var(--ease), border-color .18s var(--ease);
+}
+.qselect:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
 .search input{
   width:100%;height:36px;padding:0 var(--sp-6) 0 var(--sp-3);
   background:var(--bg);color:var(--text);
@@ -429,7 +441,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-18T17:27">2026-09-18 17:27</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-23T14:24">2026-09-23 14:24</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -553,6 +565,23 @@ const QUICK_FOLDERS = [
   { name: "China", id: "1-GeUUgOUW18QKg1SLHGrBsUVzRp9107h" },
   { name: "Classic", id: "1vRdWOqwo9vDrfw_0rCBLZaNisiaVj_at" },
 ];
+
+/* 하위 폴더가 여러 개라 버튼 하나로는 고를 수 없는 라이브러리 — 드롭다운으로 고른다(2026-09-23 추가).
+   '전체'를 고르면 루트 폴더를 그대로 불러온다(재귀 스캔이 하위 폴더를 알아서 다 훑는다 — MAX_DEPTH 참고). */
+const QUICK_GROUPS = [
+  {
+    name: "바람의 검심",
+    id: "1kXlLfbXmGSRey0v99MxjsHaHRsZZQIha",
+    children: [
+      { name: "메이지 검객 낭만담", id: "18Lo1qywEdxRcECkPFeXoVD4vVxpHisfN" },
+      { name: "유신지사의 진혼가", id: "1UlXFpnCOnlxkmEPhniEcCUQc1FZHPVrV" },
+      { name: "추억편",           id: "1HNtpraZjUrQLp_sOtW6wcakarL42WKKB" },
+      { name: "성상편",           id: "1lRQbpMihD0PhE1pvlJEbBLwmqIzekk9s" },
+      { name: "신교토편",         id: "1s4bzRZnz16rR9uJvmlD0C9iHZpsREazO" },
+    ],
+  },
+];
+
 function driveFolderUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
 
 /* 폴더 없이 고정 목록을 쓰고 싶을 때만 채우세요. */
@@ -1042,7 +1071,7 @@ async function runLoad(folderId, addressToRemember) {
     return;
   }
 
-  const buttons = [$("#load"), ...quickBtns];
+  const buttons = [$("#load"), ...quickBtns, ...quickSelects];
   buttons.forEach((b) => { b.disabled = true; });
   say("폴더를 읽는 중…");
 
@@ -1098,7 +1127,7 @@ async function runLoad(folderId, addressToRemember) {
   }
 }
 
-/* East/West/China 빠른 폴더 버튼 — '드라이브 폴더' 패널에 순서대로 렌더링.
+/* East/West/China/Classic 빠른 폴더 버튼 — '드라이브 폴더' 패널에 순서대로 렌더링.
    ID를 이미 알고 있어 '폴더 불러오기'를 먼저 누를 필요 없이 바로 해당 폴더만 불러온다. */
 const quickBtns = QUICK_FOLDERS.map((qf) => {
   const b = document.createElement("button");
@@ -1108,6 +1137,45 @@ const quickBtns = QUICK_FOLDERS.map((qf) => {
   b.addEventListener("click", () => runLoad(qf.id, driveFolderUrl(qf.id)));
   $("#quickFolders").appendChild(b);
   return b;
+});
+
+/* 하위 폴더가 여러 개인 라이브러리(바람의 검심 등)는 버튼 대신 드롭다운으로 고른다.
+   '전체'를 고르면 루트를, 개별 항목을 고르면 그 하위 폴더만 불러온다. 고르는 즉시
+   불러오기를 시작하고 select는 바로 안내 문구로 되돌린다 — 지금 무엇이 불려 있는지
+   계속 보여주는 선택창이 아니라, 누르면 실행되는 메뉴로 동작하게 하기 위해서다. */
+const quickSelects = QUICK_GROUPS.map((group) => {
+  const sel = document.createElement("select");
+  sel.className = "qselect";
+  sel.title = group.name;
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = group.name + " ▾";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  sel.appendChild(placeholder);
+
+  const all = document.createElement("option");
+  all.value = group.id;
+  all.textContent = "전체";
+  sel.appendChild(all);
+
+  group.children.forEach((child) => {
+    const opt = document.createElement("option");
+    opt.value = child.id;
+    opt.textContent = child.name;
+    sel.appendChild(opt);
+  });
+
+  sel.addEventListener("change", () => {
+    const id = sel.value;
+    sel.value = "";   /* 메뉴처럼 고를 때마다 안내 문구로 되돌린다 */
+    if (!id) return;
+    runLoad(id, driveFolderUrl(id));
+  });
+
+  $("#quickFolders").appendChild(sel);
+  return sel;
 });
 
 $("#load").addEventListener("click", () => {
