@@ -308,21 +308,42 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 .sort:hover:not([disabled]){color:var(--text);background:var(--surface-2);border-color:var(--muted)}
 
 /* 빠른 폴더 드롭다운 — 하위 폴더가 여러 개인 라이브러리(바람의 검심 등)는
-   버튼 대신 이걸로 고른다. 옆의 빠른 폴더 버튼(.btn.btn--sm)과 높이·글자 크기를 맞춘다.
-   appearance:none이 필요한 이유: 안 지우면 Windows Chrome이 자체 화살표를 알약
-   테두리 밖에 각진 박스로 따로 그려서 모양이 깨진다 — 대신 옵션 글자 안의 "▾"로
-   화살표를 대신한다(이 앱이 다른 곳(.menu > summary)에서도 쓰는 방식). */
-.qselect{
-  -webkit-appearance:none;appearance:none;
+   버튼 대신 이걸로 고른다. 네이티브 <select>는 옵션 팝업(둥근 모서리·그림자·다크 배경)을
+   CSS로 못 꾸며서 OS 기본 팝업이 그대로 튀어나와 깨져 보였다(2026-09-23) — 대신 이 앱이
+   이미 쓰는 details/summary 드롭다운(.menu)을 작은 버전(.qmenu)으로 재사용한다.
+   클래스에 "menu"를 포함시켜야 기존 열고닫기 로직(문서 바깥 클릭 시 닫기, 한 번에
+   하나만 열기 — 아래 "헤더 드롭다운" 스크립트)을 그대로 탄다. */
+.qmenu{position:relative}
+.qmenu > summary{
+  display:inline-flex;align-items:center;gap:2px;
   height:28px;padding:0 var(--sp-3);
-  background:var(--surface-2);color:var(--muted);
+  list-style:none;cursor:pointer;
   border:1px solid var(--line);border-radius:var(--r-pill);
-  font:inherit;font-size:var(--fs-sm);font-weight:600;
-  cursor:pointer;
+  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
+  white-space:nowrap;
   transition:color .18s var(--ease), border-color .18s var(--ease);
 }
-.qselect:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
-.qselect option{background:var(--surface-2);color:var(--text)}
+.qmenu > summary::-webkit-details-marker{display:none}
+.qmenu > summary::after{content:"▾";font-size:9px;opacity:.7}
+.qmenu > summary:hover{color:var(--text);border-color:var(--muted)}
+.qmenu[open] > summary{color:var(--accent);border-color:var(--accent)}
+.qmenu__panel{
+  position:absolute;left:0;top:calc(100% + var(--sp-2));z-index:70;
+  display:grid;gap:2px;
+  min-width:168px;
+  padding:var(--sp-2);
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-md);
+  box-shadow:var(--shadow);
+}
+.qmenu__panel button{
+  display:block;width:100%;text-align:left;
+  padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-sm);
+  font-size:var(--fs-sm);font-weight:600;color:var(--text);
+  transition:background .16s var(--ease);
+}
+.qmenu__panel button:hover:not([disabled]){background:var(--surface-2)}
 .search input{
   width:100%;height:36px;padding:0 var(--sp-6) 0 var(--sp-3);
   background:var(--bg);color:var(--text);
@@ -446,7 +467,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-23T14:29">2026-09-23 14:29</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-23T14:38">2026-09-23 14:38</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -479,7 +500,12 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
       </div>
     </details>
 
-    <details class="menu" id="setupBox">
+    <!-- CLIENT_ID가 코드에 고정돼 있어 평소엔 열 일이 없다. 화면에서 아예 숨긴다(2026-09-23,
+         사용자 요청) — hidden 속성은 open 상태와 무관하게 항상 감추므로, 아래 JS의
+         $("#setupBox").open = true 호출(클라이언트 ID가 비었거나 저장 실패 시)이 남아 있어도
+         안전하다. 지우지 않고 hidden으로만 둔 이유: 나중에 클라이언트 ID를 코드에서 빼야
+         할 일이 생기면(계정 교체 등) hidden만 떼면 바로 되살아난다. -->
+    <details class="menu" id="setupBox" hidden>
       <summary>설정</summary>
       <div class="menu__panel">
         <label class="label" for="cid">OAuth 클라이언트 ID</label>
@@ -564,16 +590,21 @@ const DEFAULT_FOLDER    = "";
    폴더 주소 입력 없이도 바로 접근할 수 있도록 ID를 기억해 둔다(사용자 요청).
    ID는 Drive에서 폴더를 옮기거나 지우지 않는 한 바뀌지 않는다. */
 const KEVIN_ROOT_ID = "1Y5HxbzYS8Fa-AM-5UIZ4-bwp0IOdM_WA";
-const QUICK_FOLDERS = [
-  { name: "East",  id: "11Akt4yA8Y2yp-kLif2LVIO0clk2uCmae" },
-  { name: "West",  id: "1YUHOzOz4tHURAZgkmUDH7xCsWtuqVQ68" },
-  { name: "China", id: "1-GeUUgOUW18QKg1SLHGrBsUVzRp9107h" },
-  { name: "Classic", id: "1vRdWOqwo9vDrfw_0rCBLZaNisiaVj_at" },
-];
 
-/* 하위 폴더가 여러 개라 버튼 하나로는 고를 수 없는 라이브러리 — 드롭다운으로 고른다(2026-09-23 추가).
-   '전체'를 고르면 루트 폴더를 그대로 불러온다(재귀 스캔이 하위 폴더를 알아서 다 훑는다 — MAX_DEPTH 참고). */
+/* 빠른 폴더 = 큰 카테고리(드롭다운) 2개 — 2026-09-23 개편.
+   각 그룹은 '전체'(id, 루트 폴더 — 재귀 스캔이 하위 폴더를 알아서 다 훑는다·MAX_DEPTH 참고)
+   와 개별 하위 폴더(children)로 이루어진다. */
 const QUICK_GROUPS = [
+  {
+    name: "일반 동영상",
+    id: KEVIN_ROOT_ID,
+    children: [
+      { name: "East",    id: "11Akt4yA8Y2yp-kLif2LVIO0clk2uCmae" },
+      { name: "West",    id: "1YUHOzOz4tHURAZgkmUDH7xCsWtuqVQ68" },
+      { name: "Classic", id: "1vRdWOqwo9vDrfw_0rCBLZaNisiaVj_at" },
+      { name: "China",   id: "1-GeUUgOUW18QKg1SLHGrBsUVzRp9107h" },
+    ],
+  },
   {
     name: "바람의 검심",
     id: "1kXlLfbXmGSRey0v99MxjsHaHRsZZQIha",
@@ -1076,7 +1107,7 @@ async function runLoad(folderId, addressToRemember) {
     return;
   }
 
-  const buttons = [$("#load"), ...quickBtns, ...quickSelects];
+  const buttons = [$("#load"), ...quickMenuButtons];
   buttons.forEach((b) => { b.disabled = true; });
   say("폴더를 읽는 중…");
 
@@ -1132,55 +1163,41 @@ async function runLoad(folderId, addressToRemember) {
   }
 }
 
-/* East/West/China/Classic 빠른 폴더 버튼 — '드라이브 폴더' 패널에 순서대로 렌더링.
-   ID를 이미 알고 있어 '폴더 불러오기'를 먼저 누를 필요 없이 바로 해당 폴더만 불러온다. */
-const quickBtns = QUICK_FOLDERS.map((qf) => {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "btn btn--sm";
-  b.textContent = qf.name;
-  b.addEventListener("click", () => runLoad(qf.id, driveFolderUrl(qf.id)));
-  $("#quickFolders").appendChild(b);
-  return b;
-});
+/* 빠른 폴더 드롭다운 — '일반 동영상'(East/West/Classic/China)과 '바람의 검심' 두 카테고리로
+   나뉜다(2026-09-23 개편, 이전엔 East 등 4개가 버튼으로 따로 있었다). 네이티브 <select>로
+   먼저 만들었다가 옵션 팝업이 OS 기본 모양 그대로 튀어나와 다크 테마와 안 맞게 깨져 보이는
+   문제가 있었다 — 이 앱이 이미 쓰는 details/summary 드롭다운(.menu, "드라이브 폴더"/"설정"과
+   동일한 패턴)의 작은 버전(.qmenu)으로 교체했다. 패널 안 버튼을 고르면 그 폴더를 바로
+   불러오고 메뉴는 닫는다. */
+const quickMenuButtons = [];
+const quickMenus = QUICK_GROUPS.map((group) => {
+  const d = document.createElement("details");
+  d.className = "menu qmenu";
 
-/* 하위 폴더가 여러 개인 라이브러리(바람의 검심 등)는 버튼 대신 드롭다운으로 고른다.
-   '전체'를 고르면 루트를, 개별 항목을 고르면 그 하위 폴더만 불러온다. 고르는 즉시
-   불러오기를 시작하고 select는 바로 안내 문구로 되돌린다 — 지금 무엇이 불려 있는지
-   계속 보여주는 선택창이 아니라, 누르면 실행되는 메뉴로 동작하게 하기 위해서다. */
-const quickSelects = QUICK_GROUPS.map((group) => {
-  const sel = document.createElement("select");
-  sel.className = "qselect";
-  sel.title = group.name;
+  const summary = document.createElement("summary");
+  summary.textContent = group.name;
+  d.appendChild(summary);
 
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = group.name + " ▾";
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  sel.appendChild(placeholder);
+  const panel = document.createElement("div");
+  panel.className = "qmenu__panel";
 
-  const all = document.createElement("option");
-  all.value = group.id;
-  all.textContent = "전체";
-  sel.appendChild(all);
+  const addOption = (name, id) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = name;
+    b.addEventListener("click", () => {
+      d.open = false;
+      runLoad(id, driveFolderUrl(id));
+    });
+    quickMenuButtons.push(b);
+    panel.appendChild(b);
+  };
+  addOption("전체", group.id);
+  group.children.forEach((child) => addOption(child.name, child.id));
 
-  group.children.forEach((child) => {
-    const opt = document.createElement("option");
-    opt.value = child.id;
-    opt.textContent = child.name;
-    sel.appendChild(opt);
-  });
-
-  sel.addEventListener("change", () => {
-    const id = sel.value;
-    sel.value = "";   /* 메뉴처럼 고를 때마다 안내 문구로 되돌린다 */
-    if (!id) return;
-    runLoad(id, driveFolderUrl(id));
-  });
-
-  $("#quickFolders").appendChild(sel);
-  return sel;
+  d.appendChild(panel);
+  $("#quickFolders").appendChild(d);
+  return d;
 });
 
 $("#load").addEventListener("click", () => {
@@ -1211,11 +1228,16 @@ document.addEventListener("click", (e) => {
     if (!d.contains(e.target)) d.open = false;
   });
 });
-/* 한 번에 하나만 열리도록 합니다. */
+/* 한 번에 하나만 열리도록 합니다.
+   바람의 검심 드롭다운(.qmenu)처럼 메뉴 안에 메뉴가 중첩된 경우(2026-09-23)도 있어서,
+   자기 자신을 담고 있는 조상 메뉴는 닫지 않는다 — 안 그러면 하위 드롭다운을 여는 순간
+   그걸 담고 있는 '드라이브 폴더' 패널 자체가 같이 닫혀버린다. */
 document.querySelectorAll(".menu").forEach((d) => {
   d.addEventListener("toggle", () => {
     if (!d.open) return;
-    document.querySelectorAll(".menu[open]").forEach((o) => { if (o !== d) o.open = false; });
+    document.querySelectorAll(".menu[open]").forEach((o) => {
+      if (o !== d && !o.contains(d)) o.open = false;
+    });
   });
 });
 document.addEventListener("keydown", (e) => {
