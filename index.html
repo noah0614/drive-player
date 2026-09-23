@@ -308,8 +308,12 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 .sort:hover:not([disabled]){color:var(--text);background:var(--surface-2);border-color:var(--muted)}
 
 /* 빠른 폴더 드롭다운 — 하위 폴더가 여러 개인 라이브러리(바람의 검심 등)는
-   버튼 대신 이걸로 고른다. 옆의 빠른 폴더 버튼(.btn.btn--sm)과 높이·글자 크기를 맞춘다. */
+   버튼 대신 이걸로 고른다. 옆의 빠른 폴더 버튼(.btn.btn--sm)과 높이·글자 크기를 맞춘다.
+   appearance:none이 필요한 이유: 안 지우면 Windows Chrome이 자체 화살표를 알약
+   테두리 밖에 각진 박스로 따로 그려서 모양이 깨진다 — 대신 옵션 글자 안의 "▾"로
+   화살표를 대신한다(이 앱이 다른 곳(.menu > summary)에서도 쓰는 방식). */
 .qselect{
+  -webkit-appearance:none;appearance:none;
   height:28px;padding:0 var(--sp-3);
   background:var(--surface-2);color:var(--muted);
   border:1px solid var(--line);border-radius:var(--r-pill);
@@ -318,6 +322,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
   transition:color .18s var(--ease), border-color .18s var(--ease);
 }
 .qselect:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
+.qselect option{background:var(--surface-2);color:var(--text)}
 .search input{
   width:100%;height:36px;padding:0 var(--sp-6) 0 var(--sp-3);
   background:var(--bg);color:var(--text);
@@ -441,7 +446,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-23T14:24">2026-09-23 14:24</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-09-23T14:29">2026-09-23 14:29</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
