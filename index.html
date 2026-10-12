@@ -327,6 +327,15 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 .qmenu > summary::after{content:"▾";font-size:9px;opacity:.7}
 .qmenu > summary:hover{color:var(--text);border-color:var(--muted)}
 .qmenu[open] > summary{color:var(--accent);border-color:var(--accent)}
+.qbtn{
+  display:inline-flex;align-items:center;
+  height:28px;padding:0 var(--sp-3);
+  border:1px solid var(--line);border-radius:var(--r-pill);
+  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
+  white-space:nowrap;
+  transition:color .18s var(--ease), border-color .18s var(--ease);
+}
+.qbtn:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
 .qmenu__panel{
   position:absolute;left:0;top:calc(100% + var(--sp-2));z-index:70;
   display:grid;gap:2px;
@@ -467,7 +476,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     Google Drive Player
   </h1>
 
-  <span class="build">마지막 빌드: <time datetime="2026-09-23T14:38">2026-09-23 14:38</time></span>
+  <span class="build">마지막 빌드: <time datetime="2026-10-12T23:32">2026-10-12 23:32</time></span>
 
   <nav class="navtools">
     <button class="rail-toggle" id="railBtn" type="button"
@@ -616,6 +625,8 @@ const QUICK_GROUPS = [
       { name: "신교토편",         id: "1s4bzRZnz16rR9uJvmlD0C9iHZpsREazO" },
     ],
   },
+  /* children이 없는 항목은 드롭다운 없이 바로 불러오는 단일 버튼이 된다. */
+  { name: "기동전사 건담 제08MS소대", id: "1BLusbZSM16KJxU8gh-QZFflUIpz-_NKy" },
 ];
 
 function driveFolderUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
@@ -1171,6 +1182,16 @@ async function runLoad(folderId, addressToRemember) {
    불러오고 메뉴는 닫는다. */
 const quickMenuButtons = [];
 const quickMenus = QUICK_GROUPS.map((group) => {
+  if (!group.children || !group.children.length) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "qbtn";
+    b.textContent = group.name;
+    b.addEventListener("click", () => runLoad(group.id, driveFolderUrl(group.id)));
+    quickMenuButtons.push(b);
+    $("#quickFolders").appendChild(b);
+    return b;
+  }
   const d = document.createElement("details");
   d.className = "menu qmenu";
 
