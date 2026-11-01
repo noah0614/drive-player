@@ -36,6 +36,35 @@ self.addEventListener("message", (event) => {
   }
 });
 
+/* 토큰을 페이지에 다시 묻는다.
+   브라우저는 한가한 서비스워커(예: 영상을 일시정지해 둔 동안)를 수시로 내렸다가 다음
+   요청 때 새로 띄우는데, 그러면 위의 전역 변수 token이 비어 버린다. 예전엔 그 상태로
+   401을 돌려줘서 일시정지 후 다시 재생하면 영상이 멈췄다. 이제는 요청을 보낸 페이지
+   (없으면 열려 있는 아무 창)에 MessageChannel로 물어서 받아 온다 — 답은 index.html의
+   "need-token" 리스너가 한다. */
+function askToken(client) {
+  return new Promise((resolve) => {
+    const ch = new MessageChannel();
+    const timer = setTimeout(() => resolve(null), 3000);
+    ch.port1.onmessage = (e) => { clearTimeout(timer); resolve(e.data && e.data.value); };
+    client.postMessage({ type: "need-token" }, [ch.port2]);
+  });
+}
+async function currentToken(clientId) {
+  if (token) return token;
+  const targets = [];
+  if (clientId) {
+    const c = await self.clients.get(clientId);
+    if (c) targets.push(c);
+  }
+  if (!targets.length) targets.push(...await self.clients.matchAll({ type: "window" }));
+  for (const c of targets) {
+    const t = await askToken(c);
+    if (t) { token = t; return t; }
+  }
+  return null;
+}
+
 const STREAM_RE = /\/stream\/([^/?]+)$/;
 
 self.addEventListener("fetch", (event) => {
@@ -45,7 +74,7 @@ self.addEventListener("fetch", (event) => {
 
   const fileId = decodeURIComponent(m[1]);
   const size = Number(url.searchParams.get("size")) || 0;
-  event.respondWith(handleStream(fileId, size, event.request));
+  event.respondWith(handleStream(fileId, size, event.request, event.clientId));
 });
 
 /* "bytes=0-1", "bytes=1048576-"(끝까지), "bytes=-500"(마지막 500바이트) 형태를 파싱한다.
@@ -65,12 +94,13 @@ function parseRange(rangeHeader, size) {
   return { start, end };
 }
 
-async function handleStream(fileId, size, request) {
-  if (!token) {
-    return new Response("스트리밍용 인증 토큰이 아직 없습니다. 페이지를 새로고침해 보세요.", { status: 401 });
+async function handleStream(fileId, size, request, clientId) {
+  const tok = await currentToken(clientId);
+  if (!tok) {
+    return new Response("스트리밍용 인증 토큰이 없습니다. 페이지에서 Google 계정을 다시 연결해 주세요.", { status: 401 });
   }
 
-  const headers = { Authorization: "Bearer " + token };
+  const headers = { Authorization: "Bearer " + tok };
   const range = request.headers.get("Range");
   if (range) headers.Range = range;
 
@@ -83,6 +113,9 @@ async function handleStream(fileId, size, request) {
   } catch (err) {
     return new Response("업스트림 요청 실패: " + err.name + ": " + err.message, { status: 502 });
   }
+
+  /* 만료·철회된 토큰은 버린다 — 다음 요청 때 페이지에 새 토큰을 다시 묻게 된다 */
+  if (upstream.status === 401 && token === tok) token = null;
 
   const outHeaders = new Headers();
   const contentType = upstream.headers.get("content-type");
