@@ -5,461 +5,462 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Google Drive Player</title>
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M12 4v56l16-28z" fill="%234285F4"/><path d="M12 4l16 28 20-11z" fill="%2334A853"/><path d="M12 60l16-28 20 11z" fill="%23EA4335"/><path d="M48 21L28 32l20 11 8-6a6 6 0 000-10z" fill="%23FBBC04"/></svg>'>
-<meta name="theme-color" content="#0B0B0D">
+<meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <style>
 /* ============================================================
-   디자인 토큰 — 값을 직접 쓰지 않고 여기서만 정합니다.
-   규격이 흩어지면 화면마다 여백과 곡률이 미묘하게 어긋납니다.
+   디자인 토큰 — 2026-11-18 라이트 모드로 리뉴얼.
+   기준: 「케빈의 HTML CSS 스타일 가이드 (Light Mode)」(Notion, AX 지식 및 사례 DB)
+   3번(토큰) · 4.1(헤딩 4단) · 6.1/21.1(상단 바) · 17(세그먼티드 필터) 값을 그대로 옮겼다.
+   값을 직접 쓰지 않고 여기서만 정한다.
    ============================================================ */
 :root{
-  /* 색 — 다크 UI에 맞춘 계조. 회색은 Apple의 중립 회색을 씁니다. */
-  --bg:#0B0B0D;
-  --surface:#151517;
-  --surface-2:#1D1D20;
-  --line:rgba(255,255,255,.10);
-  --line-soft:rgba(255,255,255,.055);
-  --text:#F5F5F7;
-  --muted:#86868B;
-  --accent:#F5A524;
-  --accent-ink:#1A1204;
-  --accent-soft:rgba(245,165,36,.15);
-  --green:#4ADE80;
-  --red:#FF8A7A;
-  --red-soft:rgba(255,138,122,.15);
+  /* 색 — 가이드 3번 표 그대로 */
+  --bg:#ffffff;       --bg-alt:#f5f5f7;
+  --card:#ffffff;     --card-alt:#fbfbfd;
+  --line:#d2d2d7;     --line-soft:#e8e8ed;
+  --ink:#1d1d1f;      --ink2:#6e6e73;     --ink3:#747479;
+  --key:#0071e3;      --key-dark:#1c5fd0; --key-soft:#eaf2ff; --key-line:#b9d3ff;
+  --ok:#1a7e4f;       --ok-soft:#e8f6ee;
+  --danger:#c4342a;   --danger-soft:#fdeceb;
 
-  /* 간격 — 4의 배수 한 갈래만 씁니다 */
-  --sp-1:4px;  --sp-2:8px;  --sp-3:12px;
-  --sp-4:16px; --sp-5:24px; --sp-6:32px;
-
-  /* 곡률 — 입력/카드/알약 세 종류로 제한 */
-  --r-sm:10px;
-  --r-md:14px;
-  --r-lg:18px;
+  /* 곡률 — 카드 / 카드 안 상자 / 읽는 칩 / 누르는 것 */
+  --r-card:18px;
+  --r-in:12px;
+  --r-chip:6px;
   --r-pill:980px;
 
-  /* 글자 크기 — 6단계 */
-  --fs-xs:11px; --fs-sm:12px; --fs-md:13px;
-  --fs-base:15px; --fs-lg:17px; --fs-xl:20px;
+  /* 헤딩 4단 (4.1) + 본문·메타 */
+  --h1:clamp(26px,2.7vw,34px);
+  --h2:clamp(20px,2vw,24px);
+  --h3:17px;
+  --h4:15px;
+  --fz-body:14px; --fz-item:13.5px; --fz-meta:12px; --fz-chip:10.5px;
+
+  /* 간격 */
+  --sp-1:4px;  --sp-2:8px;  --sp-3:12px;
+  --sp-4:16px; --sp-5:24px; --sp-6:32px;
+  --pad-side:32px;
 
   --sans:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
-         system-ui, "Apple SD Gothic Neo", sans-serif;
-  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+         "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", system-ui, sans-serif;
 
-  --ease:cubic-bezier(.4,0,.2,1);
-  --shadow:0 12px 32px rgba(0,0,0,.5);
+  --sh:0 1px 3px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
+  --sh-up:0 2px 6px rgba(0,0,0,.06), 0 12px 34px rgba(0,0,0,.09);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
-  background:var(--bg);
-  color:var(--text);
+  background:var(--bg-alt);
+  color:var(--ink);
   font-family:var(--sans);
-  font-size:var(--fs-base);
-  line-height:1.6;
+  font-size:var(--fz-body);
+  line-height:1.5;
+  letter-spacing:-.003em;
+  word-break:keep-all;
   -webkit-font-smoothing:antialiased;
 }
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-button[disabled]{opacity:.32;cursor:not-allowed}
+button[disabled]{opacity:.4;cursor:not-allowed}
 input{font:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
+:focus-visible{outline:2px solid var(--key);outline-offset:2px;border-radius:var(--r-in)}
 
-/* 공통 컨트롤 — 버튼과 입력의 규격을 한곳에서 정합니다 */
+/* ---------- 공통 컨트롤 ----------
+   누르는 것은 pill(--r-pill), 읽기만 하는 라벨은 각진 칩(--r-chip).
+   테두리는 border 가 아니라 inset 그림자 — 높이가 늘어 줄이 어긋나지 않게(6.2). */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;
   height:36px;padding:0 var(--sp-4);
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  font-size:var(--fs-md);font-weight:600;
-  white-space:nowrap;
-  transition:background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+  border-radius:var(--r-pill);
+  box-shadow:inset 0 0 0 1px var(--line);
+  background:var(--bg);
+  font-size:var(--fz-item);font-weight:600;color:var(--ink);
+  white-space:nowrap;text-decoration:none;
+  transition:background .18s, box-shadow .18s, color .18s, filter .18s;
 }
-.btn:hover:not([disabled]){background:var(--surface-2);border-color:var(--muted)}
-.btn--go{background:var(--accent);color:var(--accent-ink);border-color:transparent;flex:1}
-.btn--go:hover:not([disabled]){background:#FFB53D;border-color:transparent}
-.btn--sm{height:28px;padding:0 var(--sp-3);font-size:var(--fs-sm)}
+.btn:hover:not([disabled]){background:#e8e8ed;box-shadow:inset 0 0 0 1px #c7c7cc}
+/* 화면당 주요 동작 하나만 채운다 */
+.btn--go{background:var(--key);color:#fff;box-shadow:none;flex:1}
+.btn--go:hover:not([disabled]){background:var(--key);box-shadow:none;filter:brightness(.92)}
+.btn--sm{height:30px;padding:0 var(--sp-3);font-size:var(--fz-meta)}
 
 .field{
   width:100%;height:36px;padding:0 var(--sp-3);
-  background:var(--bg);color:var(--text);
-  border:1px solid var(--line);border-radius:var(--r-sm);
-  font-family:var(--mono);font-size:var(--fs-sm);
-  transition:border-color .18s var(--ease);
+  background:var(--bg);color:var(--ink);
+  border:0;border-radius:var(--r-in);
+  box-shadow:inset 0 0 0 1px var(--line);
+  font-size:var(--fz-meta);
+  transition:box-shadow .18s;
 }
-.field:hover{border-color:var(--muted)}
-.field:focus{border-color:var(--accent);outline:none}
-.field::placeholder{color:#5B5B60}
+.field:hover{box-shadow:inset 0 0 0 1px #c7c7cc}
+.field:focus{box-shadow:inset 0 0 0 2px var(--key);outline:none}
+.field::placeholder{color:var(--ink3)}
 
-.label{font-size:var(--fs-sm);font-weight:600;color:var(--muted)}
-.hint{margin:0;font-size:var(--fs-xs);color:var(--muted);line-height:1.6}
-.hint strong{color:var(--text);font-weight:600}
+.label{font-size:var(--fz-meta);font-weight:600;color:var(--ink2)}
+.hint{margin:0;font-size:var(--fz-meta);color:var(--ink2);line-height:1.6}
+.hint strong{color:var(--ink);font-weight:600}
 .row{display:flex;gap:var(--sp-2)}
-/* 빠른 폴더는 계속 늘어난다 — 한 줄에 다 안 들어가면 다음 줄로 넘긴다
-   (3개째인 '기동전사 건담 제08MS소대'에서 이미 패널 폭을 꽉 채웠다) */
-#quickFolders{flex-wrap:wrap}
 
 /* 폴더 패널 속 '고급' — 직접 링크 붙여넣기는 자주 안 써서 기본은 접어 둔다 */
 .adv > summary{
-  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
+  font-size:var(--fz-meta);font-weight:600;color:var(--ink2);
   cursor:pointer;list-style:none;
 }
 .adv > summary::-webkit-details-marker{display:none}
 .adv > summary::before{content:"▸ ";font-size:9px}
 .adv[open] > summary::before{content:"▾ "}
-.adv > summary:hover{color:var(--text)}
+.adv > summary:hover{color:var(--ink)}
 .adv__body{display:grid;gap:var(--sp-3);margin-top:var(--sp-3)}
 
-/* ---------- 헤더 ---------- */
-.masthead{
-  display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
-  padding:var(--sp-3) var(--sp-6);
+/* ---------- 상단 바 (6.1 · 21.1) ----------
+   한 줄: 로고 → 카테고리 탭 → 우측 pill 묶음. 반투명 흰 바 + 흐림. */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(255,255,255,.86);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
   border-bottom:1px solid var(--line-soft);
 }
-.masthead h1{
-  display:flex;align-items:center;gap:var(--sp-2);
-  margin:0;font-size:var(--fs-lg);font-weight:600;letter-spacing:-.01em;
+.topbar__in{
+  display:flex;align-items:center;gap:22px;
+  min-height:56px;padding:0 var(--pad-side);
 }
-.logo{width:21px;height:21px;flex:none}
+.brand{
+  display:flex;align-items:center;gap:var(--sp-2);flex:none;
+  margin:0;padding:0;
+  font-size:var(--h4);font-weight:700;letter-spacing:-.01em;color:var(--ink);
+  transition:opacity .18s;
+}
+.brand:hover{opacity:.6}
+.logo{width:22px;height:22px;flex:none}
 
-/* 마지막 빌드 — 캐시 때문에 실제로 최신 배포를 보고 있는지 헷갈릴 때가 있어서
-   분 단위까지 찍는다. 배포할 때마다 <time>의 datetime 속성과 표시 텍스트를 함께 고친다. */
-.build{
-  font-size:var(--fs-sm);color:var(--muted);
-  white-space:nowrap;letter-spacing:-.005em;
+/* 카테고리 탭 — 네비탭 14px/700, 활성은 --key-soft + --key-dark */
+.cats{
+  display:flex;align-items:center;gap:4px;
+  min-width:0;overflow-x:auto;scrollbar-width:none;
 }
-.build::before{
-  content:"";display:inline-block;
-  width:1px;height:11px;margin-right:var(--sp-3);
-  background:var(--line);vertical-align:-1px;
+.cats::-webkit-scrollbar{display:none}
+.cat{
+  flex:0 0 auto;
+  padding:7px 13px;border-radius:var(--r-pill);
+  font-size:14px;font-weight:700;letter-spacing:-.008em;color:var(--ink);
+  white-space:nowrap;
+  transition:background .15s, color .15s, transform .1s;
 }
+.cat:hover:not([disabled]):not(.is-on){background:#e8e8ed}
+.cat:active:not([disabled]){transform:scale(.97)}
+.cat.is-on{background:var(--key-soft);color:var(--key-dark)}
 
-.navtools{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+/* 우측 pill — 12px/500 --ink2, inset 테두리. 묶음 안 간격은 탭 간격과 같은 4px */
+.tools{margin-left:auto;display:flex;align-items:center;gap:4px;flex:none}
+.pill,
+.menu > summary{
+  display:inline-flex;align-items:center;gap:6px;
+  height:30px;padding:0 13px;
+  list-style:none;cursor:pointer;
+  border-radius:var(--r-pill);
+  box-shadow:inset 0 0 0 1px var(--line);
+  font-size:var(--fz-meta);font-weight:500;color:var(--ink2);
+  white-space:nowrap;
+  transition:background .15s, box-shadow .15s, color .15s, transform .1s;
+}
+.pill:hover:not([disabled]),
+.menu > summary:hover{background:#e8e8ed;box-shadow:inset 0 0 0 1px #c7c7cc;color:var(--ink)}
+.pill:active:not([disabled]),
+.menu > summary:active{transform:scale(.97)}
+.menu > summary::-webkit-details-marker{display:none}
+.menu > summary::after{content:"▾";font-size:9px}
+.menu[open] > summary{background:var(--key);box-shadow:none;color:#fff}
+.pill svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 .menu{position:relative}
-.menu > summary,
-.rail-toggle{
-  display:inline-flex;align-items:center;gap:var(--sp-1);
-  height:36px;padding:0 var(--sp-4);
-  list-style:none;cursor:pointer;
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  background:var(--surface-2);
-  font-size:var(--fs-md);font-weight:600;color:var(--muted);
-  white-space:nowrap;
-  transition:color .18s var(--ease), border-color .18s var(--ease);
-}
-.menu > summary::-webkit-details-marker{display:none}
-.menu > summary::after{content:"▾";font-size:9px;opacity:.7}
-.menu > summary:hover,
-.rail-toggle:hover{color:var(--text);border-color:var(--muted)}
-.menu[open] > summary{color:var(--accent);border-color:var(--accent)}
 .menu__panel{
   position:absolute;right:0;top:calc(100% + var(--sp-2));z-index:60;
   width:min(380px, calc(100vw - var(--sp-6)));
   display:grid;gap:var(--sp-3);
   padding:var(--sp-5);
-  background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--r-lg);
-  box-shadow:var(--shadow);
+  background:var(--card);
+  border-radius:var(--r-card);
+  box-shadow:inset 0 0 0 1px var(--line-soft), var(--sh-up);
 }
 
-/* 인증 상태 */
+/* 인증 상태 — 읽는 정보 + 누르는 버튼 하나 */
 .auth{
-  display:flex;align-items:center;gap:var(--sp-2);
-  height:36px;padding:0 var(--sp-1) 0 var(--sp-3);
-  background:var(--surface-2);
-  border:1px solid var(--line);border-radius:var(--r-pill);
+  display:flex;align-items:center;gap:6px;
+  height:30px;padding:0 3px 0 12px;
+  border-radius:var(--r-pill);
+  box-shadow:inset 0 0 0 1px var(--line);
 }
-.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex:none}
-.auth[data-on="yes"] .dot{background:var(--green)}
-.auth[data-on="err"] .dot{background:var(--red)}
-.auth__state{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap}
-.auth[data-on="yes"] .auth__state{color:var(--text)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ink3);flex:none}
+.auth[data-on="yes"] .dot{background:var(--ok)}
+.auth[data-on="err"] .dot{background:var(--danger)}
+.auth__state{font-size:var(--fz-meta);color:var(--ink2);white-space:nowrap}
+.auth[data-on="yes"] .auth__state{color:var(--ink)}
+.auth .btn--sm{height:24px;padding:0 10px;font-size:11.5px;background:var(--key-soft);color:var(--key-dark);box-shadow:none}
+.auth .btn--sm:hover:not([disabled]){background:var(--key);color:#fff;box-shadow:none}
 
-/* 결과 안내 — 메뉴를 닫아도 보이도록 헤더 아래 폭 전체에 둡니다 */
+/* 마지막 빌드 — 캐시 때문에 실제로 최신 배포를 보고 있는지 헷갈릴 때가 있어서
+   분 단위까지 찍는다. 배포할 때 scripts/deploy.py 가 <time> 을 갱신한다. */
+.build{font-size:11px;color:var(--ink3);white-space:nowrap}
+
+/* ---------- 하위 카테고리 — 세그먼티드 컨트롤 (17.2 · 17.4 Apple 실측값) ----------
+   캡슐(.seg-ind) 하나가 미끄러지며 선택을 옮긴다. 하위 폴더가 없는 카테고리는 줄째로 감춘다. */
+.subbar{
+  display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;
+  padding:var(--sp-4) var(--pad-side) 0;
+  max-width:1600px;margin:0 auto;width:100%;
+}
+.subbar[hidden]{display:none}
+.subbar__title{margin:0;font-size:var(--h3);font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.seg{
+  position:relative;display:inline-flex;align-items:center;
+  background:var(--line-soft);border-radius:var(--r-pill);padding:4px;
+  max-width:100%;overflow-x:auto;scrollbar-width:none;
+}
+.seg::-webkit-scrollbar{display:none}
+.seg-ind{
+  position:absolute;top:4px;left:4px;height:36px;width:0;
+  background:var(--ink);border-radius:var(--r-pill);pointer-events:none;
+  transition:left .32s ease-out, width .32s ease-out;
+}
+.seg-ind.is-instant{transition:none}
+.seg-b{
+  position:relative;z-index:1;flex:0 0 auto;
+  height:36px;padding:0 16px;border-radius:var(--r-pill);
+  font-size:14px;font-weight:500;letter-spacing:-.006em;
+  color:var(--ink);white-space:nowrap;
+  transition:color .2s ease-out;
+}
+.seg-b.is-on{color:#fff}
+.seg-b:not(.is-on):hover:not([disabled]){color:var(--key-dark)}
+
+/* 결과 안내 — 오류 전용(JS say() 참고). 메뉴를 닫아도 보이게 폭 전체에 둔다 */
 .note{
-  margin:0;padding:var(--sp-3) var(--sp-6);
-  font-size:var(--fs-md);color:var(--muted);
-  background:var(--surface);
-  border-bottom:1px solid var(--line-soft);
+  margin:var(--sp-4) auto 0;max-width:1600px;
+  padding:0 var(--pad-side);
+  font-size:var(--fz-item);
 }
 .note:empty{display:none}
-.note[data-tone="bad"]{color:var(--red)}
-.note[data-tone="ok"]{color:var(--green)}
+.note[data-tone="bad"]{color:var(--danger)}
+.note[data-tone="ok"]{color:var(--ok)}
+.note[data-tone]::before{content:""}
 
 /* ---------- 레이아웃 ---------- */
 .wrap{
   display:grid;
   grid-template-columns:minmax(0,1fr) 360px;
   gap:var(--sp-5);
-  padding:var(--sp-3) var(--sp-6) var(--sp-4);
+  padding:var(--sp-4) var(--pad-side) var(--sp-5);
   align-items:start;
   max-width:1600px;margin:0 auto;
 }
 
 /* ---------- 재생 화면 ---------- */
 .stage{min-width:0}
-/* 재생 정보 줄 — 화면에서는 감춘다.
-   파일명은 우측 재생목록에 이미 있으므로 이 자리는 중복이고,
-   비우면 그만큼 재생 화면이 세로로 커진다(화면 공간 우선).
-   지우지 않고 감추기만 하는 이유가 둘 있다 —
-   JS(titleEl/markEl/fidEl)가 계속 값을 채워도 안전하고, 화면 낭독기에는 남는다. */
+/* 재생 정보 줄 — 화면에서는 감춘다(파일명은 우측 재생목록에 이미 있어 중복, 비우면
+   그만큼 재생 화면이 커진다). JS가 계속 값을 채우고, 화면 낭독기에는 남는다. */
 .slate{
   position:absolute;width:1px;height:1px;margin:-1px;padding:0;
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
-.slate__mark{
-  flex:none;
-  padding:3px var(--sp-2);border-radius:var(--r-pill);
-  background:var(--accent-soft);color:var(--accent);
-  font-family:var(--mono);font-size:var(--fs-xs);font-weight:600;
-}
-.slate__title{
-  margin-right:auto;
-  font-size:var(--fs-base);font-weight:600;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.slate__id{flex:none;font-family:var(--mono);font-size:var(--fs-xs);color:var(--muted)}
 .frame{
   position:relative;aspect-ratio:16/9;
-  background:#000;
-  border:1px solid var(--line-soft);border-radius:var(--r-lg);
+  background:var(--card);   /* 영상 자체가 검은 바탕(video 태그)을 깐다 — 빈 화면 가장자리에 검은 테가 비치지 않게 */
+  border-radius:var(--r-card);
+  box-shadow:var(--sh);
   overflow:hidden;
 }
-/* 원본 화질 재생 — Drive 미리보기(iframe)는 항상 360p 안팎으로 다시 인코딩해서 내려주므로,
-   OAuth 토큰으로 원본 바이트를 직접 받아 이 video 태그에 물린다.
-   object-fit:contain 인 이유는 영상 비율이 프레임과 다를 때 잘리지 않고 레터박스로 보이게 하기 위해서다. */
+/* 원본 화질 재생 — object-fit:contain 이라 비율이 달라도 잘리지 않고 레터박스로 보인다 */
 .frame video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
 .frame audio{width:100%;margin:auto;display:block}
 .empty{
   position:absolute;inset:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:var(--sp-2);text-align:center;padding:var(--sp-6);
-  background:var(--surface);
+  gap:var(--sp-3);text-align:center;padding:var(--sp-6);
+  background:var(--card);
 }
-.empty strong{font-size:var(--fs-lg);font-weight:600}
-.empty span{color:var(--muted);font-size:var(--fs-md);max-width:44ch}
+.empty strong{font-size:var(--h2);font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+.empty span{color:var(--ink2);font-size:var(--fz-body);max-width:44ch}
+.empty .btn--go{flex:none;margin-top:var(--sp-2)}
 
 /* ---------- 재생목록 ---------- */
 .rail{
-  background:var(--surface);
-  border:1px solid var(--line-soft);border-radius:var(--r-lg);
+  background:var(--card);
+  border-radius:var(--r-card);
+  box-shadow:var(--sh);
   overflow:hidden;
 }
-
-/* 재생목록 접기 — 토글 버튼은 헤더에 둡니다.
-   레일을 접으면 레일 안의 컨트롤이 함께 사라지므로, 다시 펼칠 버튼이
-   레일 안에 있으면 접는 순간 되돌릴 방법이 없어집니다. */
-.rail-toggle{cursor:pointer}
-.rail-toggle svg{
-  width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round;flex:none;
-}
-/* 상태는 색이 아니라 화살표 방향으로 알린다 — 헤더의 다른 컨트롤과 톤을 맞추기 위해서다 */
+/* 재생목록 접기 — 토글은 상단 바에 둔다(레일 안에 두면 접는 순간 되돌릴 방법이 없다) */
 .rail-toggle .chev-close{display:none}
 body[data-rail="off"] .rail-toggle .chev-open{display:none}
 body[data-rail="off"] .rail-toggle .chev-close{display:inline}
 body[data-rail="off"] .rail{display:none}
-/* 레일이 빠진 만큼 재생 화면이 가로를 모두 씁니다 */
 body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 .rail__head{
-  display:flex;align-items:center;gap:var(--sp-3);
-  padding:var(--sp-4);
-  border-bottom:1px solid var(--line-soft);
-  font-size:var(--fs-md);font-weight:600;
+  display:flex;align-items:center;gap:var(--sp-2);
+  padding:var(--sp-4) var(--sp-4) var(--sp-3);
 }
-.rail__title{flex:none}
+.rail__title{flex:none;margin:0 auto 0 0;font-size:var(--h4);font-weight:700;color:var(--ink)}
 .rail__count{
-  margin-left:auto;
-  font-family:var(--mono);font-size:var(--fs-sm);font-weight:400;color:var(--muted);
+  font-size:var(--fz-meta);font-weight:500;color:var(--ink2);
+  font-variant-numeric:tabular-nums;
 }
+.rail__sub{
+  display:flex;align-items:center;gap:var(--sp-2);
+  padding:0 var(--sp-4) var(--sp-3);
+  border-bottom:1px solid var(--line-soft);
+}
+.rail__where{
+  min-width:0;flex:1;
+  font-size:var(--fz-meta);color:var(--ink2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.rail__where b{color:var(--ink);font-weight:600}
 
-/* 이전·다음 — 헤더에 함께 놓이므로 아이콘만 두어 폭을 아낍니다 */
+/* 이전·다음 — 아이콘만 두어 폭을 아낀다 */
 .step{
   display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;flex:none;
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  color:var(--muted);
-  transition:color .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+  width:30px;height:30px;flex:none;
+  border-radius:var(--r-pill);
+  background:var(--bg-alt);color:var(--ink);
+  transition:background .15s, color .15s;
 }
-.step:hover:not([disabled]){color:var(--text);background:var(--surface-2);border-color:var(--muted)}
+.step:hover:not([disabled]){background:#e8e8ed}
 .step svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;
   stroke-linecap:round;stroke-linejoin:round}
 
+/* 셔플 — 켜짐은 tinted(--key-soft + --key-dark) */
 .toggle{
   display:inline-flex;align-items:center;gap:var(--sp-1);
-  height:28px;padding:0 var(--sp-3);
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
-  transition:color .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+  height:30px;padding:0 var(--sp-3);
+  border-radius:var(--r-pill);
+  background:var(--bg-alt);
+  font-size:var(--fz-meta);font-weight:600;color:var(--ink2);
+  transition:background .15s, color .15s;
 }
-.toggle:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
-.toggle[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+.toggle:hover:not([disabled]){background:#e8e8ed;color:var(--ink)}
+.toggle[aria-pressed="true"]{background:var(--key-soft);color:var(--key-dark)}
+.toggle[aria-pressed="true"]:hover:not([disabled]){background:var(--key);color:#fff}
 .toggle svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 
 .search{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-3) var(--sp-4) var(--sp-1)}
+.search[hidden]{display:none}
 .search__box{position:relative;flex:1;min-width:0;display:block}
-/* 정렬 전환 — 두 가지뿐이라 목록을 여는 대신 눌러서 바꿉니다 */
+/* 정렬 전환 — 두 가지뿐이라 목록을 여는 대신 눌러서 바꾼다 */
 .sort{
   flex:none;height:36px;padding:0 var(--sp-3);
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
+  border-radius:var(--r-pill);
+  background:var(--bg-alt);
+  font-size:var(--fz-meta);font-weight:600;color:var(--ink2);
   white-space:nowrap;
-  transition:color .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+  transition:background .15s, color .15s;
 }
-.sort:hover:not([disabled]){color:var(--text);background:var(--surface-2);border-color:var(--muted)}
-
-/* 빠른 폴더 드롭다운 — 하위 폴더가 여러 개인 라이브러리(바람의 검심 등)는
-   버튼 대신 이걸로 고른다. 네이티브 <select>는 옵션 팝업(둥근 모서리·그림자·다크 배경)을
-   CSS로 못 꾸며서 OS 기본 팝업이 그대로 튀어나와 깨져 보였다(2026-09-23) — 대신 이 앱이
-   이미 쓰는 details/summary 드롭다운(.menu)을 작은 버전(.qmenu)으로 재사용한다.
-   클래스에 "menu"를 포함시켜야 기존 열고닫기 로직(문서 바깥 클릭 시 닫기, 한 번에
-   하나만 열기 — 아래 "헤더 드롭다운" 스크립트)을 그대로 탄다. */
-.qmenu{position:relative}
-.qmenu > summary{
-  display:inline-flex;align-items:center;gap:2px;
-  height:28px;padding:0 var(--sp-3);
-  list-style:none;cursor:pointer;
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
-  white-space:nowrap;
-  transition:color .18s var(--ease), border-color .18s var(--ease);
-}
-.qmenu > summary::-webkit-details-marker{display:none}
-.qmenu > summary::after{content:"▾";font-size:9px;opacity:.7}
-.qmenu > summary:hover{color:var(--text);border-color:var(--muted)}
-.qmenu[open] > summary{color:var(--accent);border-color:var(--accent)}
-.qbtn{
-  display:inline-flex;align-items:center;
-  height:28px;padding:0 var(--sp-3);
-  border:1px solid var(--line);border-radius:var(--r-pill);
-  font-size:var(--fs-sm);font-weight:600;color:var(--muted);
-  white-space:nowrap;
-  transition:color .18s var(--ease), border-color .18s var(--ease);
-}
-.qbtn:hover:not([disabled]){color:var(--text);border-color:var(--muted)}
-.qmenu__panel{
-  position:absolute;left:0;top:calc(100% + var(--sp-2));z-index:70;
-  display:grid;gap:2px;
-  min-width:168px;
-  padding:var(--sp-2);
-  background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--r-md);
-  box-shadow:var(--shadow);
-}
-.qmenu__panel button{
-  display:block;width:100%;text-align:left;
-  padding:var(--sp-2) var(--sp-3);
-  border-radius:var(--r-sm);
-  font-size:var(--fs-sm);font-weight:600;color:var(--text);
-  transition:background .16s var(--ease);
-}
-.qmenu__panel button:hover:not([disabled]){background:var(--surface-2)}
+.sort:hover:not([disabled]){background:#e8e8ed;color:var(--ink)}
 .search input{
   width:100%;height:36px;padding:0 var(--sp-6) 0 var(--sp-3);
-  background:var(--bg);color:var(--text);
-  border:1px solid var(--line);border-radius:var(--r-sm);
-  font-size:var(--fs-md);
-  transition:border-color .18s var(--ease);
+  background:var(--bg-alt);color:var(--ink);
+  border:0;border-radius:var(--r-in);
+  font-size:var(--fz-item);
+  transition:box-shadow .18s, background .18s;
   -webkit-appearance:none;appearance:none;
 }
-.search input:hover{border-color:var(--muted)}
-.search input:focus{border-color:var(--accent);outline:none}
-.search input::placeholder{color:#5B5B60}
+.search input:focus{background:var(--bg);box-shadow:inset 0 0 0 2px var(--key);outline:none}
+.search input::placeholder{color:var(--ink2)}
 .search input::-webkit-search-cancel-button{display:none}
 .search__x{
   position:absolute;right:var(--sp-2);top:50%;transform:translateY(-50%);
   display:flex;align-items:center;justify-content:center;
   width:20px;height:20px;border-radius:50%;
-  color:var(--muted);font-size:var(--fs-xs);
+  color:var(--ink2);font-size:11px;
 }
-.search__x:hover{color:var(--text);background:var(--surface-2)}
+.search__x[hidden]{display:none}
+.search__x:hover{color:var(--ink);background:#e8e8ed}
 
 .list{list-style:none;margin:0;padding:var(--sp-2);max-height:46vh;overflow-y:auto;overscroll-behavior:contain}
 .list:empty{display:none}
-/* 한 줄 = 한 항목. 목록을 최대한 많이 보여주기 위한 구조입니다. */
+/* 한 줄 = 한 항목. 목록을 최대한 많이 보여주기 위한 구조 */
 .clip{
   display:flex;align-items:center;gap:var(--sp-2);
   width:100%;text-align:left;
-  padding:var(--sp-2) var(--sp-3);
-  border-radius:var(--r-sm);
-  transition:background .16s var(--ease);
+  padding:9px var(--sp-3);
+  border-radius:var(--r-in);
+  transition:background .15s;
 }
-.clip:hover{background:var(--surface-2)}
-.clip[aria-current="true"]{background:var(--accent-soft)}
+.clip:hover{background:var(--bg-alt)}
+.clip[aria-current="true"]{background:var(--key-soft)}
 .clip[aria-current="true"] .clip__no,
-.clip[aria-current="true"] .clip__name{color:var(--accent)}
+.clip[aria-current="true"] .clip__name{color:var(--key-dark)}
 .clip__no{
-  flex:none;width:22px;
-  font-family:var(--mono);font-size:var(--fs-xs);color:var(--muted);
+  flex:none;width:24px;
+  font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;
 }
 .clip__name{
   flex:1;min-width:0;
-  font-size:var(--fs-md);font-weight:600;line-height:1.4;
+  font-size:var(--fz-item);font-weight:500;line-height:1.4;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+.clip[aria-current="true"] .clip__name{font-weight:700}
 .clip__dur{
   flex:none;
-  font-family:var(--mono);font-size:var(--fs-xs);color:var(--muted);
+  font-size:11px;color:var(--ink2);font-variant-numeric:tabular-nums;
 }
+/* 읽기 전용 칩 — 각진 6px, 10.5px */
 .tag{
-  padding:1px var(--sp-1);border-radius:var(--r-sm);
-  border:1px solid var(--line);
-  font-size:10px;text-transform:uppercase;letter-spacing:.02em;
+  flex:none;
+  padding:1px 6px;border-radius:var(--r-chip);
+  background:var(--bg-alt);color:var(--ink2);
+  font-size:var(--fz-chip);font-weight:600;letter-spacing:.02em;text-transform:uppercase;
 }
-.tag--warn{border-color:transparent;background:var(--red-soft);color:var(--red)}
-.clip--stuck .clip__name{color:var(--muted);font-weight:400}
-.clip--stuck[aria-current="true"] .clip__name{color:var(--red)}
+.tag--warn{background:var(--danger-soft);color:var(--danger);text-transform:none}
+.clip--stuck .clip__name{color:var(--ink2);font-weight:400}
+.clip--stuck[aria-current="true"] .clip__name{color:var(--danger)}
 
 .list__none{
   margin:0;padding:var(--sp-5) var(--sp-4);
-  text-align:center;color:var(--muted);font-size:var(--fs-md);
+  text-align:center;color:var(--ink2);font-size:var(--fz-item);
 }
 
 /* 스크롤바 */
 .list::-webkit-scrollbar{width:10px}
-.list::-webkit-scrollbar-thumb{background:var(--line);border-radius:var(--r-pill);border:3px solid var(--surface)}
+.list::-webkit-scrollbar-thumb{background:var(--line);border-radius:var(--r-pill);border:3px solid var(--card)}
 .list::-webkit-scrollbar-track{background:transparent}
 
-/* 넓은 화면에서는 페이지 전체를 한 화면에 고정하고 재생목록만 스크롤합니다.
-   목록이 화면 아래 끝까지 늘어나 한 번에 훨씬 많이 보입니다. */
+/* 넓은 화면에서는 페이지 전체를 한 화면에 고정하고 재생목록만 스크롤한다 */
 @media (min-width:901px){
-  /* iOS Safari의 100vh는 주소창·툴바 높이를 포함해서 실제 보이는 영역보다 큽니다.
-     그대로 두면 iPad에서 화면 아래가 툴바 뒤로 잘립니다.
-     svh(가장 작은 뷰포트 높이)는 툴바가 보이는 상태를 기준으로 하므로 잘리지 않습니다.
-     이 앱은 페이지 스크롤이 없어 툴바가 늘 표시되므로 svh가 정확히 맞습니다.
-     지원하지 않는 브라우저는 위의 vh를 씁니다. */
+  /* iOS Safari의 100vh는 툴바 높이를 포함해 실제보다 크다 — svh로 잘림 방지 */
   body{height:100vh;height:100svh;display:flex;flex-direction:column;overflow:hidden}
-  /* width:100% 가 없으면 margin:0 auto 때문에 가로로 늘어나지 않습니다 */
   .wrap{
     flex:1;min-height:0;width:100%;
-    /* 홈 인디케이터가 있는 기기를 위한 여유 (해당 없으면 기본값 유지) */
-    padding-bottom:max(var(--sp-3), env(safe-area-inset-bottom, 0px));
+    padding-bottom:max(var(--sp-5), env(safe-area-inset-bottom, 0px));
   }
-
   .stage{display:flex;flex-direction:column;min-height:0;height:100%}
-  .frame{
-    flex:1 1 auto;                /* 남은 높이를 모두 차지 */
-    min-height:0;
-    aspect-ratio:auto;            /* 높이를 화면에 맡기고, 영상 비율은 Drive 플레이어가 맞춥니다 */
-    width:100%;
-  }
-
+  .frame{flex:1 1 auto;min-height:0;aspect-ratio:auto;width:100%}
   .rail{display:flex;flex-direction:column;min-height:0;height:100%}
-  .list{
-    flex:1 1 auto;
-    max-height:none;              /* 남은 높이를 전부 차지 */
-    min-height:120px;
-  }
+  .list{flex:1 1 auto;max-height:none;min-height:120px}
 }
 
+/* 상단 바가 한 줄에 안 들어가면 카테고리 탭 줄을 아래로 내린다 */
+@media (max-width:1180px){
+  .topbar__in{flex-wrap:wrap;row-gap:0;padding-top:var(--sp-2)}
+  .cats{order:3;flex-basis:100%;padding:var(--sp-1) 0 var(--sp-2);margin:0 -4px}
+}
 @media (max-width:900px){
-  .masthead{padding:var(--sp-3) var(--sp-4)}
-  .note{padding:var(--sp-3) var(--sp-4)}
-  .wrap{grid-template-columns:minmax(0,1fr);padding:var(--sp-4);gap:var(--sp-4)}
+  :root{--pad-side:20px}
+  .wrap{grid-template-columns:minmax(0,1fr);gap:var(--sp-4)}
   .list{max-height:none}
-  .menu__panel{width:min(380px, calc(100vw - var(--sp-4)))}
+  .build{display:none}
+}
+@media (max-width:560px){
+  .auth__state{display:none}
+  .auth{padding-left:10px}
+  .pill .pill__txt{display:none}
+  /* 폴더 버튼이 오른쪽 끝에 있지 않아 패널이 화면 왼쪽 밖으로 나갔다 — 좁은 폭에선 화면 폭에 맞춰 띄운다 */
+  .menu__panel{position:fixed;left:16px;right:16px;top:60px;width:auto}
+  .subbar{gap:var(--sp-3)}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important;animation:none !important}
@@ -468,77 +469,78 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
 </head>
 <body>
 
-<header class="masthead">
-  <h1>
-    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M12 4v56l16-28z" fill="#4285F4"/>
-      <path d="M12 4l16 28 20-11z" fill="#34A853"/>
-      <path d="M12 60l16-28 20 11z" fill="#EA4335"/>
-      <path d="M48 21L28 32l20 11 8-6a6 6 0 000-10z" fill="#FBBC04"/>
-    </svg>
-    Google Drive Player
-  </h1>
-
-  <span class="build">마지막 빌드: <time datetime="2026-11-01T15:35">2026-11-01 15:35</time></span>
-
-  <nav class="navtools">
-    <button class="rail-toggle" id="railBtn" type="button"
-            aria-expanded="true" aria-controls="rail" title="재생목록 접기 / 펼치기">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6h10"/><path d="M4 12h10"/><path d="M4 18h10"/>
-        <path class="chev-open"  d="M17 9l3 3-3 3"/>
-        <path class="chev-close" d="M20 9l-3 3 3 3"/>
+<header class="topbar">
+  <div class="topbar__in">
+    <button class="brand" id="brand" type="button" title="처음 화면으로">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M12 4v56l16-28z" fill="#4285F4"/>
+        <path d="M12 4l16 28 20-11z" fill="#34A853"/>
+        <path d="M12 60l16-28 20 11z" fill="#EA4335"/>
+        <path d="M48 21L28 32l20 11 8-6a6 6 0 000-10z" fill="#FBBC04"/>
       </svg>
-      재생목록
+      Drive Player
     </button>
 
-    <details class="menu" id="folderBox">
-      <summary>드라이브 폴더</summary>
-      <div class="menu__panel">
-        <label class="label">빠른 폴더</label>
-        <div class="row" id="quickFolders"></div>
+    <!-- 영상 카테고리 — QUICK_GROUPS 를 순회해 스크립트가 탭을 만든다 -->
+    <nav class="cats" id="cats" role="tablist" aria-label="영상 카테고리"></nav>
 
-        <details class="adv">
-          <summary>고급</summary>
-          <div class="adv__body">
-            <label class="label" for="folder">폴더 주소</label>
-            <input class="field" id="folder" type="text"
-                   placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
-            <button class="btn btn--go" id="load">폴더 불러오기</button>
-          </div>
-        </details>
+    <div class="tools">
+      <span class="build">마지막 빌드: <time datetime="2026-11-18T22:42">2026-11-18 22:42</time></span>
 
-        <button class="btn" id="clear">비우기</button>
+      <button class="pill rail-toggle" id="railBtn" type="button"
+              aria-expanded="true" aria-controls="rail" title="재생목록 접기 / 펼치기">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h10"/><path d="M4 12h10"/><path d="M4 18h10"/>
+          <path class="chev-open"  d="M17 9l3 3-3 3"/>
+          <path class="chev-close" d="M20 9l-3 3 3 3"/>
+        </svg>
+        <span class="pill__txt">재생목록</span>
+      </button>
+
+      <details class="menu" id="folderBox">
+        <summary>폴더</summary>
+        <div class="menu__panel">
+          <label class="label" for="folder">폴더 주소로 직접 열기</label>
+          <input class="field" id="folder" type="text"
+                 placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+          <button class="btn btn--go" id="load">폴더 불러오기</button>
+          <button class="btn" id="clear">재생목록 비우기</button>
+        </div>
+      </details>
+
+      <!-- CLIENT_ID가 코드에 고정돼 있어 평소엔 열 일이 없다. hidden 으로 숨긴다(2026-09-23).
+           나중에 클라이언트 ID를 코드에서 빼야 하면 hidden 만 떼면 바로 되살아난다. -->
+      <details class="menu" id="setupBox" hidden>
+        <summary>설정</summary>
+        <div class="menu__panel">
+          <label class="label" for="cid">OAuth 클라이언트 ID</label>
+          <input class="field" id="cid" type="text"
+                 placeholder="000000-xxxx.apps.googleusercontent.com" autocomplete="off">
+          <button class="btn" id="saveCid">저장</button>
+          <p class="hint">
+            Google Cloud Console에서 발급한 <strong>웹 애플리케이션</strong> 클라이언트 ID를 넣으세요.
+            승인된 JavaScript 원본에 이 페이지의 주소를 등록해야 합니다.
+            클라이언트 ID는 비밀값이 아니며 이 브라우저에만 저장됩니다.
+          </p>
+        </div>
+      </details>
+
+      <div class="auth" id="auth" data-on="no">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
+        <button class="btn btn--sm" id="signin">연결</button>
       </div>
-    </details>
-
-    <!-- CLIENT_ID가 코드에 고정돼 있어 평소엔 열 일이 없다. 화면에서 아예 숨긴다(2026-09-23,
-         사용자 요청) — hidden 속성은 open 상태와 무관하게 항상 감추므로, 아래 JS의
-         $("#setupBox").open = true 호출(클라이언트 ID가 비었거나 저장 실패 시)이 남아 있어도
-         안전하다. 지우지 않고 hidden으로만 둔 이유: 나중에 클라이언트 ID를 코드에서 빼야
-         할 일이 생기면(계정 교체 등) hidden만 떼면 바로 되살아난다. -->
-    <details class="menu" id="setupBox" hidden>
-      <summary>설정</summary>
-      <div class="menu__panel">
-        <label class="label" for="cid">OAuth 클라이언트 ID</label>
-        <input class="field" id="cid" type="text"
-               placeholder="000000-xxxx.apps.googleusercontent.com" autocomplete="off">
-        <button class="btn" id="saveCid">저장</button>
-        <p class="hint">
-          Google Cloud Console에서 발급한 <strong>웹 애플리케이션</strong> 클라이언트 ID를 넣으세요.
-          승인된 JavaScript 원본에 이 페이지의 주소를 등록해야 합니다.
-          클라이언트 ID는 비밀값이 아니며 이 브라우저에만 저장됩니다.
-        </p>
-      </div>
-    </details>
-
-    <div class="auth" id="auth" data-on="no">
-      <span class="dot" aria-hidden="true"></span>
-      <span class="auth__state" id="authState">Google 계정 연결 안 됨</span>
-      <button class="btn btn--sm" id="signin">연결</button>
     </div>
-  </nav>
+  </div>
 </header>
+
+<!-- 하위 카테고리 — 고른 카테고리에 하위 폴더가 있을 때만 보인다 -->
+<div class="subbar" id="subbar" hidden>
+  <h2 class="subbar__title" id="subTitle"></h2>
+  <div class="seg" id="seg" role="tablist" aria-label="하위 카테고리">
+    <span class="seg-ind" id="segInd" aria-hidden="true"></span>
+  </div>
+</div>
 
 <p class="note" id="note"></p>
 
@@ -551,15 +553,15 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     </div>
     <div class="frame" id="frame">
       <div class="empty" id="empty">
-        <strong>목록이 비어 있습니다</strong>
-        <span>위쪽 ‘드라이브 폴더’에서 빠른 폴더를 고르면 폴더 안의 영상이 모두 목록에 올라옵니다.</span>
+        <strong>카테고리를 골라 주세요</strong>
+        <span>위쪽 카테고리를 누르면 그 안의 영상이 모두 재생목록에 올라오고 바로 재생됩니다.</span>
       </div>
     </div>
   </section>
 
   <aside class="rail" id="rail">
     <div class="rail__head">
-      <span class="rail__title">재생 목록</span>
+      <h2 class="rail__title">재생 목록</h2>
       <button class="toggle" id="shuffle" type="button" aria-pressed="false" title="랜덤 재생">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M16 3h5v5"/><path d="M4 20 21 3"/>
@@ -573,7 +575,10 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
       <button class="step" id="next" type="button" title="다음 영상" aria-label="다음 영상">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
       </button>
-      <span class="rail__count" id="count">00</span>
+    </div>
+    <div class="rail__sub">
+      <span class="rail__where" id="where">불러온 카테고리 없음</span>
+      <span class="rail__count" id="count">0개</span>
     </div>
 
     <div class="search">
@@ -667,6 +672,7 @@ let shuffleOn = false;
 let queue = [];           // 재생 순서(인덱스 배열)
 let railOpen = true;      // 재생목록 펼침 여부
 let qpos = -1;
+let loadedLabel = "";     // 재생목록을 채운 카테고리 이름 (재생목록 머리에 표시)
 
 /* ---------- 저장된 설정 ---------- */
 const store = {
@@ -757,8 +763,19 @@ function render() {
   listEl.innerHTML = "";
   const shown = CLIPS.reduce((n, _, i) => n + (matches(i) ? 1 : 0), 0);
   countEl.textContent = filter
-    ? shown + " / " + CLIPS.length
-    : String(CLIPS.length).padStart(2, "0");
+    ? shown + " / " + CLIPS.length + "개"
+    : CLIPS.length + "개";
+  /* 지금 재생목록이 어느 카테고리에서 왔는지 — 빈 칸 대신 이유를 글자로 둔다 */
+  const where = $("#where");
+  where.textContent = "";
+  if (loadedLabel) {
+    const b = document.createElement("b");
+    b.textContent = loadedLabel;
+    where.appendChild(b);
+  } else {
+    where.textContent = "불러온 카테고리 없음";
+  }
+  where.title = loadedLabel;
 
   const searchBox = document.querySelector(".search");
   if (searchBox) searchBox.hidden = CLIPS.length === 0;
@@ -1215,7 +1232,7 @@ async function listFolder(folderId, depth, out) {
 /* 폴더 ID 하나를 실제로 읽어 재생목록에 채우는 공통 로직 — 기존 '폴더 불러오기'
    버튼과 East/West/China 빠른 폴더 버튼이 함께 쓴다(2026-09-18 리팩터).
    addressToRemember는 다음 방문 때 '폴더 주소' 칸에 복원할 값(=dp.folderId). */
-async function runLoad(folderId, addressToRemember) {
+async function runLoad(folderId, addressToRemember, label) {
   if (!clientId) {
     $("#setupBox").open = true;
     say("먼저 OAuth 클라이언트 ID를 저장하세요.", "bad");
@@ -1239,6 +1256,7 @@ async function runLoad(folderId, addressToRemember) {
     }
 
     CLIPS = found;
+    loadedLabel = label || "직접 연 폴더";
     $("#folder").value = addressToRemember;
     store.set("dp.folderId", addressToRemember);
     $("#folderBox").open = false;   /* 다 불러왔으면 접어서 목록에 자리를 내줍니다 */
@@ -1281,51 +1299,114 @@ async function runLoad(folderId, addressToRemember) {
   }
 }
 
-/* 빠른 폴더 드롭다운 — '일반 동영상'(East/West/Classic/China)과 '바람의 검심' 두 카테고리로
-   나뉜다(2026-09-23 개편, 이전엔 East 등 4개가 버튼으로 따로 있었다). 네이티브 <select>로
-   먼저 만들었다가 옵션 팝업이 OS 기본 모양 그대로 튀어나와 다크 테마와 안 맞게 깨져 보이는
-   문제가 있었다 — 이 앱이 이미 쓰는 details/summary 드롭다운(.menu, "드라이브 폴더"/"설정"과
-   동일한 패턴)의 작은 버전(.qmenu)으로 교체했다. 패널 안 버튼을 고르면 그 폴더를 바로
-   불러오고 메뉴는 닫는다. */
-const quickMenuButtons = [];
-const quickMenus = QUICK_GROUPS.map((group) => {
-  if (!group.children || !group.children.length) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "qbtn";
-    b.textContent = group.name;
-    b.addEventListener("click", () => runLoad(group.id, driveFolderUrl(group.id)));
-    quickMenuButtons.push(b);
-    $("#quickFolders").appendChild(b);
-    return b;
-  }
-  const d = document.createElement("details");
-  d.className = "menu qmenu";
+/* 영상 카테고리 — 2026-11-18 리뉴얼. 예전엔 '드라이브 폴더' 메뉴 안에 드롭다운으로 숨어 있던 것을
+   목록으로 꺼냈다: 상단 바의 카테고리 탭(큰 묶음) → 그 아래 세그먼티드 컨트롤(하위 폴더) →
+   오른쪽 재생목록(영상) 순서로 고르고 본다. 탭·세그먼트는 QUICK_GROUPS 를 순회해 만든다 —
+   손으로 다시 적으면 카테고리를 추가할 때 한쪽만 바뀌어 조용히 어긋난다(스타일 가이드 17.3).
+   '전체'가 첫 항목이자 탭을 눌렀을 때의 기본 선택이다. 하위 폴더가 없는 카테고리는 세그먼트 줄을 감춘다. */
+const quickMenuButtons = [];      /* 불러오는 동안 잠글 버튼들 (runLoad 참고) */
+const catsEl = $("#cats"), segEl = $("#seg"), segInd = $("#segInd");
+let sel = { g: -1, c: -1 };       /* 고른 카테고리(g)와 하위(c, -1 = 전체) */
 
-  const summary = document.createElement("summary");
-  summary.textContent = group.name;
-  d.appendChild(summary);
+function selName(g, c) {
+  const group = QUICK_GROUPS[g];
+  if (!group) return "";
+  return c >= 0 ? group.name + " · " + group.children[c].name : group.name + (group.children ? " · 전체" : "");
+}
 
-  const panel = document.createElement("div");
-  panel.className = "qmenu__panel";
-
-  const addOption = (name, id) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = name;
-    b.addEventListener("click", () => {
-      d.open = false;
-      runLoad(id, driveFolderUrl(id));
-    });
-    quickMenuButtons.push(b);
-    panel.appendChild(b);
+function moveIndicator(instant) {
+  const on = segEl.querySelector(".seg-b.is-on");
+  if (!on || !on.offsetWidth) { segInd.style.width = "0"; return; }
+  segInd.classList.toggle("is-instant", !!instant);
+  segInd.style.left = on.offsetLeft + "px";
+  segInd.style.width = on.offsetWidth + "px";
+  if (instant) { void segInd.offsetWidth; segInd.classList.remove("is-instant"); }
+  /* 좁은 화면에선 세그먼트·탭 줄이 가로로 스크롤된다 — 고른 항목이 밖으로 밀려 있으면 가운데로 데려온다 */
+  const center = (box, el) => {
+    if (box.scrollWidth <= box.clientWidth) return;
+    box.scrollLeft = el.offsetLeft - (box.clientWidth - el.offsetWidth) / 2;
   };
-  addOption("전체", group.id);
-  group.children.forEach((child) => addOption(child.name, child.id));
+  center(segEl, on);
+  const tab = catsEl.querySelector(".cat.is-on");
+  if (tab) center(catsEl, tab);
+}
 
-  d.appendChild(panel);
-  $("#quickFolders").appendChild(d);
-  return d;
+function paintSelection(instant) {
+  catsEl.querySelectorAll(".cat").forEach((b, i) => {
+    const on = i === sel.g;
+    b.classList.toggle("is-on", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  const group = QUICK_GROUPS[sel.g];
+  const hasSub = !!(group && group.children && group.children.length);
+  $("#subbar").hidden = !hasSub;
+  segEl.querySelectorAll(".seg-b").forEach((b) => b.remove());
+  if (!hasSub) return;
+  $("#subTitle").textContent = group.name;
+  [{ name: "전체", id: group.id }].concat(group.children).forEach((child, k) => {
+    const c = k - 1;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "seg-b" + (c === sel.c ? " is-on" : "");
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(c === sel.c));
+    b.tabIndex = c === sel.c ? 0 : -1;
+    b.textContent = child.name;
+    b.addEventListener("click", () => choose(sel.g, c));
+    segEl.appendChild(b);
+  });
+  moveIndicator(instant);
+}
+
+/* 카테고리를 고르면 바로 불러와 재생한다. 이미 고른 것을 다시 눌러도 다시 불러온다
+   (첫 화면에선 아무것도 불러오지 않은 상태라 그 한 번이 필요하다). */
+function choose(g, c) {
+  const group = QUICK_GROUPS[g];
+  if (!group) return;
+  const prevG = sel.g;
+  sel = { g, c };
+  paintSelection(prevG !== g);
+  const id = c >= 0 ? group.children[c].id : group.id;
+  runLoad(id, driveFolderUrl(id), selName(g, c));
+}
+
+QUICK_GROUPS.forEach((group, g) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "cat";
+  b.setAttribute("role", "tab");
+  b.setAttribute("aria-selected", "false");
+  b.textContent = group.name;
+  b.addEventListener("click", () => choose(g, -1));
+  quickMenuButtons.push(b);
+  catsEl.appendChild(b);
+});
+
+/* 세그먼트 키보드 — ←/→/Home/End (role=tablist) */
+segEl.addEventListener("keydown", (e) => {
+  const btns = [...segEl.querySelectorAll(".seg-b")];
+  const i = btns.indexOf(document.activeElement);
+  if (i < 0) return;
+  let j = -1;
+  if (e.key === "ArrowRight") j = Math.min(btns.length - 1, i + 1);
+  else if (e.key === "ArrowLeft") j = Math.max(0, i - 1);
+  else if (e.key === "Home") j = 0;
+  else if (e.key === "End") j = btns.length - 1;
+  if (j < 0) return;
+  e.preventDefault(); e.stopPropagation();
+  btns[j].focus();
+  btns[j].click();
+});
+window.addEventListener("resize", () => moveIndicator(true));
+/* 웹폰트가 늦게 들어오면 글자 폭이 바뀌어 캡슐 폭이 어긋난다 — 다 들어온 뒤 다시 잰다 */
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveIndicator(true));
+
+/* 로고 = 처음 화면 버튼. 재생 중인 영상은 끊지 않고, 열린 메뉴를 닫고 맨 위로 올린다. */
+$("#brand").addEventListener("click", () => {
+  document.querySelectorAll(".menu[open]").forEach((d) => { d.open = false; });
+  window.scrollTo(0, 0);
+  listEl.scrollTop = 0;
+  scrollToCurrent();
 });
 
 $("#load").addEventListener("click", () => {
@@ -1334,16 +1415,22 @@ $("#load").addEventListener("click", () => {
     say("폴더 링크에서 ID를 찾지 못했습니다. 폴더 주소 전체를 붙여넣어 주세요.", "bad");
     return;
   }
-  runLoad(folderId, $("#folder").value.trim());
+  /* 주소로 직접 연 폴더는 어느 카테고리도 아니다 — 탭 선택을 지운다 */
+  sel = { g: -1, c: -1 };
+  paintSelection();
+  runLoad(folderId, $("#folder").value.trim(), "직접 연 폴더");
 });
 
 $("#clear").addEventListener("click", () => {
   CLIPS = [];
   queue = []; qpos = -1;
-  $("#folderBox").open = true;    /* 비웠으면 다시 입력할 수 있게 펼칩니다 */
+  loadedLabel = "";
+  sel = { g: -1, c: -1 };
+  paintSelection();
+  $("#folderBox").open = false;
   render();
   updateTransport();
-  showEmpty("목록이 비어 있습니다", "‘드라이브 폴더’에서 빠른 폴더를 고르면 폴더 안의 영상이 모두 목록에 올라옵니다.");
+  showEmpty("카테고리를 골라 주세요", "위쪽 카테고리를 누르면 그 안의 영상이 모두 재생목록에 올라오고 바로 재생됩니다.");
   say("");
 });
 
