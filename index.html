@@ -485,7 +485,7 @@ body[data-rail="off"] .wrap{grid-template-columns:minmax(0,1fr)}
     <nav class="cats" id="cats" role="tablist" aria-label="영상 카테고리"></nav>
 
     <div class="tools">
-      <span class="build">마지막 빌드: <time datetime="2026-11-18T22:42">2026-11-18 22:42</time></span>
+      <span class="build">마지막 빌드: <time datetime="2026-11-19T01:41">2026-11-19 01:41</time></span>
 
       <button class="pill rail-toggle" id="railBtn" type="button"
               aria-expanded="true" aria-controls="rail" title="재생목록 접기 / 펼치기">
@@ -633,8 +633,10 @@ const QUICK_GROUPS = [
       { name: "신교토편",         id: "1s4bzRZnz16rR9uJvmlD0C9iHZpsREazO" },
     ],
   },
-  /* children이 없는 항목은 드롭다운 없이 바로 불러오는 단일 버튼이 된다. */
+  /* children이 없는 항목은 세그먼트 줄 없이 탭 하나로 바로 불러온다. */
   { name: "기동전사 건담 제08MS소대", id: "1BLusbZSM16KJxU8gh-QZFflUIpz-_NKy" },
+  /* 2026-11-19 추가 — Kevin\Anime (ready-for-encode\Anime 스캔 대상) */
+  { name: "Anime", id: "1gnXiI3-JlAWekvplitQ3kCWskcsFC2-1" },
 ];
 
 function driveFolderUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
